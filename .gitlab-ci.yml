@@ -15,9 +15,15 @@ stages:
     before_script:
         - pip install tox
 
-check-autoformatting:
+typing:
+    stage: verify
+    extends: .tox-task
+    script:
+        - tox -e mypy
+
+linting:
     stage: verify
     extends: .tox-task
     script:
         - tox -e black
-        - tox -e mypy
+        - tox -e pylint
