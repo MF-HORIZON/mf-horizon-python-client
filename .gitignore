@@ -1,0 +1,32 @@
+# Bytecompiles, caches
+**/*.pyc
+__pycache__/
+
+# Package builds / installs
+build/
+dist/
+.eggs/
+*.egg-info/
+*.egg
+
+# Temp fix for https://github.com/pypa/pip/issues/6213 :
+pip-wheel-metadata/
+
+# Dask
+dask-worker-space/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# MyPy
+.mypy_cache/
+
+# Pycharm
+.idea/
+
+#Pytest and tox
+.pytest_cache/
+.tox/
+
+
+
