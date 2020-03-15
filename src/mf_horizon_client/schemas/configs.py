@@ -3,6 +3,7 @@ from typing import Any, Dict, Type
 from marshmallow import fields, post_load
 from marshmallow_enum import EnumField
 from marshmallow_oneofschema import OneOfSchema
+
 from mf_horizon_client.data_structures.configs.stage_config import (
     BacktestStageConfig,
     FeatureGenerationStageConfig,

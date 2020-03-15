@@ -4,6 +4,7 @@ from typing import Any, Dict, List, cast
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from mf_horizon_client.client.datasets.data_interface import DataInterface
 from mf_horizon_client.client.pipelines.blueprints import BlueprintType
@@ -28,7 +29,6 @@ from mf_horizon_client.utils.string_case_converters import (
     convert_dict_from_camel_to_snake,
     convert_dict_from_snake_to_camel,
 )
-from tqdm import tqdm
 
 
 class PipelineInterface:

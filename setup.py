@@ -1,8 +1,7 @@
 import os
 
-from setuptools import find_namespace_packages, setup
-
 import versioneer
+from setuptools import find_namespace_packages, setup
 
 install_requires = [
     "numpy",
@@ -28,8 +27,8 @@ dev_extras = [
     "black",
     "check-manifest",
     "coverage",
-    "isort",
     "mypy",
+    "isort",
     "pre-commit",
     "pylint",
     "pytest",

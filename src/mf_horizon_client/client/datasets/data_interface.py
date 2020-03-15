@@ -4,6 +4,7 @@ from typing import List
 import dataclasses
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from mf_horizon_client.data_structures.column_passport import ColumnPassport
 from mf_horizon_client.data_structures.dataset_summary import DatasetSummary
@@ -15,7 +16,6 @@ from mf_horizon_client.utils.string_case_converters import (
     convert_dict_from_camel_to_snake,
 )
 from mf_horizon_client.utils.terminal_messages import print_success
-from tqdm import tqdm
 
 
 class DataInterface:

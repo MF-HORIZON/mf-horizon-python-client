@@ -1,7 +1,8 @@
 from typing import List
 
-from mf_horizon_client.data_structures.pipeline import Pipeline
 from tqdm import tqdm
+
+from mf_horizon_client.data_structures.pipeline import Pipeline
 
 
 def update_single_pipeline_status(

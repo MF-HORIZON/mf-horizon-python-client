@@ -2,12 +2,13 @@ from typing import Any, Dict, Union, cast
 from urllib.parse import urljoin
 
 import requests
-from mf_horizon_client.client.error import HorizonError
-from mf_horizon_client.utils.catch_method_exception import catch_errors
-from mf_horizon_client.utils.terminal_messages import print_success
 from requests import Response, Session
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
+
+from mf_horizon_client.client.error import HorizonError
+from mf_horizon_client.utils.catch_method_exception import catch_errors
+from mf_horizon_client.utils.terminal_messages import print_success
 
 RETRY_STATUS_CODES = [500, 501, 502, 503, 504]
 

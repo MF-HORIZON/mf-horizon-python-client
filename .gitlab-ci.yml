@@ -10,10 +10,6 @@ image: python:3.6-stretch
 
 stages:
     - verify
-    - test
-    - docs
-    - deploy
-
 
 .tox-task:
     before_script:
@@ -23,60 +19,5 @@ check-autoformatting:
     stage: verify
     extends: .tox-task
     script:
-        - tox -e black,isort
-
-run-mypy:
-    stage: verify
-    extends: .tox-task
-    script:
-        - tox -e pylint
-
-run-pylint:
-    stage: verify
-    extends: .tox-task
-    script:
-        - tox -e pylint
-
-run-tests:
-    stage: test
-    extends: .tox-task
-    script:
-        - tox -e py36
-
-make-docs:
-    stage: docs
-    dependencies:
-        - run-tests
-    script:
-        - pip install .[docs]
-        - cd docs && make html
-    artifacts:
-        paths:
-            - docs/build/html/*
-
-pages:
-    stage: deploy
-    only:
-        - master
-    dependencies:
-        - make-docs
-    script:
-        - cp -a docs/build/html public
-    allow_failure: true
-    artifacts:
-        paths:
-            - public/*
-
-#deploy_to_devpi:
-#  stage: deploy
-#  script:
-#  - pip install devpi-client
-#  - devpi use https://devpi.mflocal.com
-#  - devpi login "gitlab-ci-token" --password "$CI_BUILD_TOKEN"
-#  - devpi use "mfpkgs/dev" --set-cfg
-#  - devpi upload --formats sdist,bdist_wheel
-#  tags:
-#  - docker
-#  only:
-#  - tags
-#
+        - tox -e black
+        - tox -e mypy
