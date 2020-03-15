@@ -1,5 +1,0 @@
-div.body{
-    /* This tweaks the width of code-examples in sphinx-gallery w/ the Alabaster theme. */
-    min-width: 60%;
-    max-width: 90%;
-}

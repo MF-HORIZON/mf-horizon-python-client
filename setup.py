@@ -1,15 +1,19 @@
-
-
 import os
 
-from setuptools import find_namespace_packages, setup
-
 import versioneer
+from setuptools import find_namespace_packages, setup
 
 install_requires = [
     "numpy",
     "pandas",
-] # etc
+    "urllib3",
+    "requests",
+    "dataclasses",
+    "marshmallow",
+    "marshmallow-enum",
+    "tqdm",
+    "marshmallow-oneofschema",
+]
 
 docs_extras = [
     "ipykernel",
@@ -23,8 +27,8 @@ dev_extras = [
     "black",
     "check-manifest",
     "coverage",
-    "isort",
     "mypy",
+    "isort",
     "pre-commit",
     "pylint",
     "pytest",
