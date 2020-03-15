@@ -1,5 +1,3 @@
-
-
 import os
 
 from setuptools import find_namespace_packages, setup
@@ -9,7 +7,14 @@ import versioneer
 install_requires = [
     "numpy",
     "pandas",
-] # etc
+    "urllib3",
+    "requests",
+    "dataclasses",
+    "marshmallow",
+    "marshmallow-enum",
+    "tqdm",
+    "marshmallow-oneofschema",
+]
 
 docs_extras = [
     "ipykernel",
