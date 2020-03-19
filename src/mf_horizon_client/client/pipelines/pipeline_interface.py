@@ -499,31 +499,3 @@ class PipelineInterface:
         )
         df.set_index("date", inplace=True)
         return df
-
-    @catch_errors
-    def delete_pipelines(self, pipeline_ids: List[int]):
-        """
-        Deletes pipelines as identified by their identifiers.
-        These may be retrieved by calling DataInterface.list_pipelines.
-
-        :param identifiers: list of numeric pipeline identifiers
-        :return:
-        """
-
-        pbar = tqdm(pipeline_ids)
-        for identifier in pbar:
-            pbar.set_description(f"Deleting Pipeline Set with ID: {identifier}")
-            # self.client.delete(Endpoints.SINGLE_PIPELINE(identifier))
-            self.client.delete(Endpoints.SINGLE_PIPELINE(identifier))
-
-    def delete_all_pipelines(self):
-        """
-        Deletes all pipelines owned by the current user.
-
-        WARNING: Calling this endpoint is a permanent action and cannot be undone.
-
-        :return:
-        """
-        pipelines = self.list_pipelines()
-        pipeline_ids = [pipeline.summary.id_ for pipeline in pipelines]
-        self.delete_pipelines(pipeline_ids)

@@ -73,6 +73,7 @@ class DataInterface:
         These may be retrieved by calling DataInterface.list_datasets.
 
         :param identifiers: list of numeric identifiers
+        :param names: list of name identifiers
         :return:
         """
 
