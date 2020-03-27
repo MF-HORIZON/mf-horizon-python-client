@@ -2,4 +2,8 @@
 mf-horizon-client
 =================
 
-A templated python project, created using https://gitlab.mflocal.com/core/cookiecutter-mfpython
+Requires API keys to Mind Foundry Horizon to access.
+
+Compatible with release v2.0.6 of Mind Foundry Horizon.
+
+https://www.mindfoundry.ai/horizon

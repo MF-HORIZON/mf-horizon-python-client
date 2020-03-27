@@ -5,4 +5,4 @@ build-backend = "setuptools.build_meta:__legacy__"
 [tool.black]
 include='/src/.*\.py?$|/tests/.*\.py?$|/examples/.*\.py?$'
 exclude='/_version.py|versioneer.py'
-
+line-length = 140

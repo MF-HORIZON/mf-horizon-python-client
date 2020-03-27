@@ -9,7 +9,7 @@ The Versioneer
 * like a rocketeer, but for versions!
 * https://github.com/warner/python-versioneer
 * Brian Warner
-* License: Public Domain
+* LICENSE.txt: Public Domain
 * Compatible With: python2.6, 2.7, 3.2, 3.3, 3.4, 3.5, 3.6, and pypy
 * [![Latest Version]
 (https://pypip.in/version/versioneer/badge.svg?style=flat)
@@ -266,7 +266,7 @@ direction and include code from all supported VCS systems, reducing the
 number of intermediate scripts.
 
 
-## License
+## LICENSE.txt
 
 To make Versioneer easier to embed, all its code is dedicated to the public
 domain. The `_version.py` that it creates is also in the public domain.
@@ -277,16 +277,18 @@ https://creativecommons.org/publicdomain/zero/1.0/ .
 """
 
 from __future__ import print_function
-try:
-    import configparser
-except ImportError:
-    import ConfigParser as configparser
+
 import errno
 import json
 import os
 import re
 import subprocess
 import sys
+
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 
 
 class VersioneerConfig:
