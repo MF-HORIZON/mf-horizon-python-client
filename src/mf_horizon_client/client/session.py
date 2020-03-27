@@ -46,11 +46,7 @@ class HorizonSession:
     def _make_session(server_url: str, max_retries: int, headers) -> Session:
         session = Session()
         retry = Retry(
-            total=max_retries,
-            connect=max_retries,
-            backoff_factor=0.5,
-            method_whitelist=False,
-            status_forcelist=RETRY_STATUS_CODES,
+            total=max_retries, connect=max_retries, backoff_factor=0.5, method_whitelist=False, status_forcelist=RETRY_STATUS_CODES,
         )
 
         adapter = HTTPAdapter(max_retries=retry)
@@ -58,13 +54,7 @@ class HorizonSession:
         session.headers = headers
         return session
 
-    def post(
-        self,
-        endpoint: str,
-        body: dict = None,
-        files: Dict = None,
-        on_success_message: str = None,
-    ) -> HorizonResponse:
+    def post(self, endpoint: str, body: dict = None, files: Dict = None, on_success_message: str = None,) -> HorizonResponse:
         """Make a POST request to Horizon with a JSON body.
 
         Args:
@@ -81,9 +71,7 @@ class HorizonSession:
             :class:`.HorizonError` if an error response is received.
         """
 
-        response = self._session.post(
-            urljoin(base=self._root_url, url=endpoint), body, files=files,
-        )
+        response = self._session.post(urljoin(base=self._root_url, url=endpoint), body, files=files,)
 
         if on_success_message and response.ok:
             print_success(on_success_message)
@@ -91,9 +79,7 @@ class HorizonSession:
         return HorizonResponse(response).body
 
     @catch_errors
-    def put(
-        self, endpoint: str, body: dict = None, json: dict = None
-    ) -> HorizonResponse:
+    def put(self, endpoint: str, body: dict = None, json: dict = None) -> HorizonResponse:
         """Make a PUT request to Horizon with a JSON body.
 
         Args:
@@ -112,9 +98,7 @@ class HorizonSession:
 
         return HorizonResponse(self._session.put(url, data=body, json=json)).body
 
-    def get(
-        self, endpoint: str, query_params: Dict = None, download: bool = False
-    ) -> Any:
+    def get(self, endpoint: str, query_params: Dict = None, download: bool = False) -> Any:
         """Make a GET request to Horizon
 
         Args:
@@ -127,13 +111,7 @@ class HorizonSession:
         Raises:
             :class:`.HorizonError` if an error response is received.
         """
-        url = (
-            requests.Request(
-                "GET", urljoin(base=self._root_url, url=endpoint), params=query_params
-            )
-            .prepare()
-            .url
-        )
+        url = requests.Request("GET", urljoin(base=self._root_url, url=endpoint), params=query_params).prepare().url
 
         url = cast(str, url)
 
@@ -156,9 +134,7 @@ class HorizonSession:
         Raises:
             :class:`.HorizonError` if an error response is received.
         """
-        return HorizonResponse(
-            self._session.delete(urljoin(base=self._root_url, url=endpoint)),
-        )
+        return HorizonResponse(self._session.delete(urljoin(base=self._root_url, url=endpoint)),)
 
     def disconnect(self):
         self._session.close()

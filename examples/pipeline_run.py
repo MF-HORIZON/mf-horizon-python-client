@@ -16,9 +16,7 @@ df = pd.read_csv("tech_stocks.csv").dropna()
 dataset = data_interface.upload_data(data=df, name="Tech Stocks")
 
 pipeline = pipeline_interface.create_pipeline(
-    dataset_id=dataset.summary.id_,
-    name="Test Pipeline",
-    blueprint=BlueprintType.fast_forecasting,
+    dataset_id=dataset.summary.id_, name="Test Pipeline", blueprint=BlueprintType.fast_forecasting,
 )
 
 pipeline_interface.run_pipeline(pipeline_id=pipeline.summary.id_, synchronous=False)

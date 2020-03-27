@@ -12,9 +12,7 @@ from mf_horizon_client.data_structures.individual_dataset import IndividualDatas
 from mf_horizon_client.data_structures.raw_column import RawColumn
 from mf_horizon_client.endpoints import Endpoints
 from mf_horizon_client.utils.catch_method_exception import catch_errors
-from mf_horizon_client.utils.string_case_converters import (
-    convert_dict_from_camel_to_snake,
-)
+from mf_horizon_client.utils.string_case_converters import convert_dict_from_camel_to_snake
 from mf_horizon_client.utils.terminal_messages import print_success
 
 
@@ -41,11 +39,7 @@ class DataInterface:
 
         request_data = dict(file=str_buffer, follow_redirects=True)
 
-        response = self.client.post(
-            endpoint=Endpoints.UPLOAD_DATA,
-            files=request_data,
-            on_success_message=f"Data set '{name}' uploaded",
-        )
+        response = self.client.post(endpoint=Endpoints.UPLOAD_DATA, files=request_data, on_success_message=f"Data set '{name}' uploaded",)
 
         dataset_summary = DatasetSummary(**convert_dict_from_camel_to_snake(response))
         dataset = self.get_dataset(dataset_summary.id_)
@@ -61,10 +55,7 @@ class DataInterface:
         """
 
         datasets = self.client.get(Endpoints.ALL_DATASETS)
-        return [
-            DatasetSummary(**convert_dict_from_camel_to_snake(dataset))
-            for dataset in datasets
-        ]
+        return [DatasetSummary(**convert_dict_from_camel_to_snake(dataset)) for dataset in datasets]
 
     @catch_errors
     def delete_datasets(self, identifiers: List[int] = None):
@@ -73,7 +64,6 @@ class DataInterface:
         These may be retrieved by calling DataInterface.list_datasets.
 
         :param identifiers: list of numeric identifiers
-        :param names: list of name identifiers
         :return:
         """
 
@@ -123,22 +113,12 @@ class DataInterface:
         response = self.client.get(Endpoints.SINGLE_DATASET(identifier))
 
         individual_dataset_dictionary = response
-        column_data = [
-            ColumnPassport(**convert_dict_from_camel_to_snake(col))
-            for col in individual_dataset_dictionary["analysis"]
-        ]
+        column_data = [ColumnPassport(**convert_dict_from_camel_to_snake(col)) for col in individual_dataset_dictionary["analysis"]]
         dataset = IndividualDataset(
-            analysis=column_data,
-            summary=DatasetSummary(
-                **convert_dict_from_camel_to_snake(
-                    individual_dataset_dictionary["summary"]
-                ),
-            ),
+            analysis=column_data, summary=DatasetSummary(**convert_dict_from_camel_to_snake(individual_dataset_dictionary["summary"]),),
         )
 
-        dataset.summary.columns = [
-            RawColumn(name=col.name, id_=col.id_) for col in column_data
-        ]
+        dataset.summary.columns = [RawColumn(name=col.name, id_=col.id_) for col in column_data]
 
         return dataset
 
@@ -154,9 +134,7 @@ class DataInterface:
         :return:
         """
 
-        response = self.client.get(
-            Endpoints.SINGLE_SERIES(dataset_identifier, series_identifier)
-        )
+        response = self.client.get(Endpoints.SINGLE_SERIES(dataset_identifier, series_identifier))
 
         return convert_dict_from_camel_to_snake(response)
 
@@ -171,17 +149,11 @@ class DataInterface:
         """
 
         dataset_summary = self.get_dataset(dataset_identifier)
-        names = [
-            col.name for col in dataset_summary.analysis if col.id_ == series_identifier
-        ]
+        names = [col.name for col in dataset_summary.analysis if col.id_ == series_identifier]
         if len(names) == 0:
             raise ValueError("Invalid series identifier specified")
         series_name = names[0]
-        correlation_data = self.client.get(
-            Endpoints.SINGLE_SERIES_CORRELATIONS_WITH_OTHER_SERIES(
-                dataset_identifier, series_identifier
-            )
-        )
+        correlation_data = self.client.get(Endpoints.SINGLE_SERIES_CORRELATIONS_WITH_OTHER_SERIES(dataset_identifier, series_identifier))
         correlations = pd.DataFrame.from_dict(correlation_data["data"])
         correlations.columns = ["Series", "Pearson Correlation"]
         correlations.name = series_name
@@ -197,18 +169,12 @@ class DataInterface:
         :returndT:
         """
         dataset_summary = self.get_dataset(dataset_identifier)
-        names = [
-            col.name for col in dataset_summary.analysis if col.id_ == series_identifier
-        ]
+        names = [col.name for col in dataset_summary.analysis if col.id_ == series_identifier]
         if len(names) == 0:
             raise ValueError("Invalid series identifier specified")
 
         series_name = names[0]
-        acf = self.client.get(
-            Endpoints.SINGLE_SERIES_AUTOCORRELATION(
-                dataset_identifier, series_identifier
-            )
-        )
+        acf = self.client.get(Endpoints.SINGLE_SERIES_AUTOCORRELATION(dataset_identifier, series_identifier))
         acf_df = pd.DataFrame(acf["data"])
         acf_df.columns = ["Lag", f"Correlation: f{series_name}"]
         return acf_df
@@ -223,9 +189,7 @@ class DataInterface:
         """
 
         dataset = self.get_dataset(identifier=dataset_identifier)
-        df = pd.DataFrame.from_records(
-            [dataclasses.asdict(series) for series in dataset.analysis]
-        )[["id_", "name", "adf"]]
+        df = pd.DataFrame.from_records([dataclasses.asdict(series) for series in dataset.analysis])[["id_", "name", "adf"]]
         df["id_"] = df["id_"].astype(str)
         return df
 
@@ -244,12 +208,8 @@ class DataInterface:
             pbar.set_description(f"Correlation Matrix: Processing {names[index]}")
             name = [col.name for col in dataset_summary.analysis if col.id_ == id_][0]
             df = self.get_correlations(dataset_identifier, id_)
-            self_correlation = pd.DataFrame(
-                {"Series": name, "Pearson Correlation": 1}, index=[index]
-            )
-            single_slice = pd.concat(
-                [df.iloc[:index], self_correlation, df.iloc[index:]]
-            ).reset_index(drop=True)
+            self_correlation = pd.DataFrame({"Series": name, "Pearson Correlation": 1}, index=[index])
+            single_slice = pd.concat([df.iloc[:index], self_correlation, df.iloc[index:]]).reset_index(drop=True)
             matrix[index] = single_slice.iloc[:, 1].to_numpy()
 
         return pd.DataFrame(matrix, columns=names)
@@ -265,20 +225,14 @@ class DataInterface:
         :return:
         """
         dataset_summary = self.get_dataset(dataset_identifier)
-        names = [
-            col.name for col in dataset_summary.analysis if col.id_ == series_identifier
-        ]
+        names = [col.name for col in dataset_summary.analysis if col.id_ == series_identifier]
         if len(names) == 0:
             raise ValueError("Invalid series identifier specified")
         series_name = names[0]
         mutual_information_data = self.client.get(
-            Endpoints.SINGLE_SERIES_MUTUAL_INFORMATION_WITH_OTHER_SERIES(
-                dataset_identifier, series_identifier
-            )
+            Endpoints.SINGLE_SERIES_MUTUAL_INFORMATION_WITH_OTHER_SERIES(dataset_identifier, series_identifier)
         )
-        mutual_information_data = pd.DataFrame.from_dict(
-            mutual_information_data["data"]
-        )
+        mutual_information_data = pd.DataFrame.from_dict(mutual_information_data["data"])
         mutual_information_data.columns = ["Series", "Mutual Information"]
         mutual_information_data.name = series_name
         return mutual_information_data

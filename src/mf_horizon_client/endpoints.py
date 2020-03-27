@@ -10,9 +10,7 @@ def validate_url(url: str):
     validates that a url is likely to be of the right format
     """
 
-    assert (
-        url[0] != "/"
-    ), "Endpoint Error - please remove the leading slash from endpoint url"
+    assert url[0] != "/", "Endpoint Error - please remove the leading slash from endpoint url"
 
 
 def create_full_static_endpoint(endpoint: str):
@@ -45,9 +43,7 @@ class Endpoints:
         return f"{Endpoints.SINGLE_DATASET(dataset_id)}/{series_id}/correlation"
 
     @staticmethod
-    def SINGLE_SERIES_MUTUAL_INFORMATION_WITH_OTHER_SERIES(
-        dataset_id: int, series_id: int
-    ):
+    def SINGLE_SERIES_MUTUAL_INFORMATION_WITH_OTHER_SERIES(dataset_id: int, series_id: int):
         return f"{Endpoints.SINGLE_DATASET(dataset_id)}/{series_id}/mutual_info"
 
     @staticmethod
@@ -63,8 +59,12 @@ class Endpoints:
         return f"{Endpoints.PIPELINES}{pipeline_id}"
 
     @staticmethod
+    def STAGES(pipeline_id: int):
+        return f"{Endpoints.PIPELINES}/{pipeline_id}/stages"
+
+    @staticmethod
     def SINGLE_STAGE(pipeline_id: int, stage_id: int):
-        return f"{Endpoints.PIPELINES}/{pipeline_id}/stages/{stage_id}"
+        return f"{Endpoints.STAGES(pipeline_id)}/{stage_id}"
 
     @staticmethod
     def UPDATE_STAGE_CONFIGURATION(pipeline_id: int, stage_id: int):
@@ -92,12 +92,7 @@ class Endpoints:
 
     @staticmethod
     def EXPERT_BACKTEST_FOR_STAGE_AND_HORIZON(
-        pipeline_id: int,
-        horizon: int,
-        first_row: int,
-        last_row: int,
-        n_training_rows: int,
-        stage_id: int,
+        pipeline_id: int, horizon: int, first_row: int, last_row: int, n_training_rows: int, stage_id: int,
     ):
         return (
             f"{Endpoints.SINGLE_PIPELINE(pipeline_id)}/expert/backtest?first={first_row}"

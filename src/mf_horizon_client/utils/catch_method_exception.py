@@ -17,9 +17,7 @@ def catch_errors(f):
         try:
             return f(*args, **kwargs)
         except HorizonError as exception:
-            print_failure(
-                f"{str.upper(f.__name__)} request failed to successfully execute. {exception.status_code if exception else None}"
-            )
+            print_failure(f"{str.upper(f.__name__)} request failed to successfully execute. {exception.status_code if exception else None}")
             if exception and exception.message:
                 print_server_error_details(exception.message)
 
