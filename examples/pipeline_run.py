@@ -1,5 +1,4 @@
 import pandas as pd
-
 from mf_horizon_client.client.horizon_client import HorizonClient
 from mf_horizon_client.client.pipelines.blueprints import BlueprintType
 
@@ -20,5 +19,3 @@ pipeline = pipeline_interface.create_pipeline(
 )
 
 pipeline_interface.run_pipeline(pipeline_id=pipeline.summary.id_, synchronous=False)
-
-pipeline_interface.wait_for_pipeline_completion([pipeline.summary.id_])

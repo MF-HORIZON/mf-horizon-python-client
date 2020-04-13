@@ -1,11 +1,11 @@
 import io
+import json
 from typing import List
 
 import dataclasses
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-
 from mf_horizon_client.data_structures.column_passport import ColumnPassport
 from mf_horizon_client.data_structures.dataset_summary import DatasetSummary
 from mf_horizon_client.data_structures.individual_dataset import IndividualDataset
@@ -13,7 +13,7 @@ from mf_horizon_client.data_structures.raw_column import RawColumn
 from mf_horizon_client.endpoints import Endpoints
 from mf_horizon_client.utils.catch_method_exception import catch_errors
 from mf_horizon_client.utils.string_case_converters import convert_dict_from_camel_to_snake
-from mf_horizon_client.utils.terminal_messages import print_success
+from mf_horizon_client.utils.terminal_messages import print_success, print_warning
 
 
 class DataInterface:
@@ -23,13 +23,28 @@ class DataInterface:
         """
         self.client = client
 
-    def upload_data(self, data: pd.DataFrame, name: str) -> IndividualDataset:
+    def upload_data(
+        self,
+        data: pd.DataFrame,
+        name: str,
+        forward_fill_missing_values: bool = False,
+        replace_missing_values: bool = False,
+        encode_categorical_data: bool = False,
+        max_categories: int = 5,
+        align_to_column: str = "",
+    ) -> IndividualDataset:
         """
         Uploads the given data set to the Horizon API.
-        Data should have no missing values, and must also have a column with time values.
 
+        :param align_to_column: Aligns data to column if the data is misaligned. This should be selected as the target
+        if data is misaligned or has missing values. Selecting this will also cause missing data in the specified
+        column to be dropped.
         :param data: DataFrame to be uploaded
         :param name: Name of the data set to be uploaded
+        :param forward_fill_missing_values: Forward-fill missing values
+        :param replace_missing_values: Replace missing values
+        :param encode_categorical_data: Categorically encode data that is non-numeric
+        :param max_categories: Maximum number of categories per series.
         :return: A summary of the uploaded data set.
         """
 
@@ -37,9 +52,28 @@ class DataInterface:
         str_buffer.seek(0)
         str_buffer.name = name
 
-        request_data = dict(file=str_buffer, follow_redirects=True)
+        if forward_fill_missing_values and not align_to_column:
+            print_warning(
+                "Forward-fill select without alignment to column. Please be aware that "
+                "if you choose a target column that has been forward-filled this will yield "
+                "scientifically inaccurate results"
+            )
 
-        response = self.client.post(endpoint=Endpoints.UPLOAD_DATA, files=request_data, on_success_message=f"Data set '{name}' uploaded",)
+        options = {
+            "alignTo": align_to_column,
+            "missingDataStrategy": {
+                "ffill": {"enabled": forward_fill_missing_values},
+                "replaceMissing": {"enabled": replace_missing_values, "replaceWith": 1},
+            },
+            "nonNumericStrategy": {"encode": {"enabled": encode_categorical_data, "maxCategories": max_categories}},
+        }
+
+        request_data = dict(file=str_buffer, follow_redirects=True)
+        data = dict(options=json.dumps(options))
+
+        response = self.client.post(
+            endpoint=Endpoints.UPLOAD_DATA, body=data, files=request_data, on_success_message=f"Data set '{name}' uploaded",
+        )
 
         dataset_summary = DatasetSummary(**convert_dict_from_camel_to_snake(response))
         dataset = self.get_dataset(dataset_summary.id_)

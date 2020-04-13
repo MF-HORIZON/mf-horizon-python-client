@@ -1,5 +1,4 @@
 from typing import List
-
 from tqdm import tqdm
 
 from mf_horizon_client.data_structures.pipeline import Pipeline

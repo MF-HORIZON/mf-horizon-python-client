@@ -26,6 +26,7 @@ class FeatureGeneratorType(Enum):
     logarithm = "logarithm"
     lag = "lag"
     rolling_average = "rolling_average"
+    perc_change = "perc_change"
 
 
 class RegressorType(Enum):
