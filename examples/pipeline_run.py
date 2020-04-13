@@ -1,5 +1,4 @@
 import pandas as pd
-
 from mf_horizon_client.client.horizon_client import HorizonClient
 from mf_horizon_client.client.pipelines.blueprints import BlueprintType
 

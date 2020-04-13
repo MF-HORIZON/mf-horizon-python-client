@@ -3,7 +3,6 @@ from typing import Any, Dict, Type
 from marshmallow import fields, post_load
 from marshmallow_enum import EnumField
 from marshmallow_oneofschema import OneOfSchema
-
 from mf_horizon_client.data_structures.configs.stage_config import (
     BacktestStageConfig,
     FeatureGenerationStageConfig,
@@ -61,6 +60,7 @@ class ProblemSpecConfigSchema(CamelCaseSchema):
     horizons = fields.List(fields.Integer(required=True))
     data_split = fields.Float(required=True)
     active_columns = fields.List(fields.Integer(required=False))
+    scale_factor_multiplier = fields.Float(required=True)
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use

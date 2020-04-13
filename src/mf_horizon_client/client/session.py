@@ -3,9 +3,8 @@ from urllib.parse import urljoin
 
 import requests
 from requests import Response, Session
-from requests.adapters import HTTPAdapter
 from urllib3 import Retry
-
+from requests.adapters import HTTPAdapter
 from mf_horizon_client.client.error import HorizonError
 from mf_horizon_client.utils.catch_method_exception import catch_errors
 from mf_horizon_client.utils.terminal_messages import print_success
@@ -54,15 +53,15 @@ class HorizonSession:
         session.headers = headers
         return session
 
+    @catch_errors
     def post(self, endpoint: str, body: dict = None, files: Dict = None, on_success_message: str = None,) -> HorizonResponse:
         """Make a POST request to Horizon with a JSON body.
 
         Args:
-            endpoint (str): Endpoint for the request (will be appended to the server_url).
-            body (dict): Request body in JSON format.
-            files (dict): File for file upload.
-            on_success_message (str): message to print if successful request
-
+            endpoint: Endpoint for the request (will be appended to the server_url).
+            body: Request body in JSON format.
+            files: File for file upload.
+            on_success_message: message to print if successful request
 
         Returns:
             The :class:`.HorizonResponse` to the request.
@@ -71,7 +70,7 @@ class HorizonSession:
             :class:`.HorizonError` if an error response is received.
         """
 
-        response = self._session.post(urljoin(base=self._root_url, url=endpoint), body, files=files,)
+        response = self._session.post(urljoin(base=self._root_url, url=endpoint), data=body, files=files,)
 
         if on_success_message and response.ok:
             print_success(on_success_message)

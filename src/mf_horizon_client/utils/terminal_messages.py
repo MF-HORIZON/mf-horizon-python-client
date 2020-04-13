@@ -16,3 +16,7 @@ def print_expert_message(message: str):
 
 def print_update(message: str):
     print(f"\n \u24D8 {message}\n")
+
+
+def print_warning(message: str):
+    print(f"\n \u24D8 WARN: {message}\n")
