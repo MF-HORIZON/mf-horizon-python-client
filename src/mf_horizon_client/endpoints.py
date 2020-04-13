@@ -25,7 +25,7 @@ class Endpoints:
     """
 
     HEALTH = create_full_static_endpoint("healthz/")
-    STATUS = create_full_static_endpoint("pipelines/workers/status")
+    STATUS = create_full_static_endpoint("admin/workers/status")
     UPLOAD_DATA = create_full_static_endpoint("datasets/upload")
     ALL_DATASETS = create_full_static_endpoint("datasets/")
     PIPELINES = create_full_static_endpoint("pipelines/")

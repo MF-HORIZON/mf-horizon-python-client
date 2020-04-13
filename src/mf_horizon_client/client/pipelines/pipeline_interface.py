@@ -6,12 +6,13 @@ from typing import Any, Dict, List, cast
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-
 from mf_horizon_client.client.datasets.data_interface import DataInterface
 from mf_horizon_client.client.pipelines.blueprints import BlueprintType
 from mf_horizon_client.client.pipelines.construct_pipeline_class import construct_pipeline_class
-from mf_horizon_client.data_structures.configs.stage_config import ProblemSpecificationConfig, StageConfig, StationarisationStageConfig
-from mf_horizon_client.data_structures.configs.stage_config_enums import StationarisationStrategy
+from mf_horizon_client.data_structures.configs.stage_config import (
+    ProblemSpecificationConfig,
+    StageConfig,
+)
 from mf_horizon_client.data_structures.configs.stage_types import StageType
 from mf_horizon_client.data_structures.pipeline import Pipeline
 from mf_horizon_client.data_structures.stage import Stage
@@ -110,10 +111,10 @@ class PipelineInterface:
 
         assert len(stages_matching_id) == 1, "No stage found with given identifier"
         assert config.valid_configuration_values, "Invalid numeric configuration specified"
-        config_dict = json.loads(config.as_json())
+        config_dict = dict(config=convert_dict_from_snake_to_camel(json.loads(config.as_json())), preview=False)
 
         self.client.put(
-            Endpoints.UPDATE_STAGE_CONFIGURATION(pipeline_id, stage_id), json=convert_dict_from_snake_to_camel(config_dict),
+            Endpoints.UPDATE_STAGE_CONFIGURATION(pipeline_id, stage_id), json=config_dict,
         )
 
     @catch_errors
@@ -342,17 +343,18 @@ class PipelineInterface:
 
         assert int(config.target_feature) in dataset.summary.column_ids, "Dataset id specified is different to the pipeline id"
 
-        n_rows_target = [col.n_rows for col in dataset.analysis if str(col.id_) == str(config.target_feature)][0]
+        total_rows_for_all_data = [col.n_rows for col in dataset.analysis if str(col.id_) == str(config.target_feature)][0]
 
-        n_rows_validation = int(np.ceil(config.data_split * n_rows_target))
+        validation_start_row = int(np.ceil(config.data_split * total_rows_for_all_data))
+        rows_in_validation_set = total_rows_for_all_data - validation_start_row
 
-        assert n_rows_validation / 2 > n_training_rows_for_backtest, "Too many training rows selected"
-        assert n_training_rows_for_backtest > 20, "Please select at lease 20 training rows"
+        assert rows_in_validation_set / 2 > n_training_rows_for_backtest, "Too many training rows selected"
+        assert n_training_rows_for_backtest > 20, "Please select at least 20 training rows"
 
         return self.run_expert_backtest_between_two_rows(
             horizon=horizon,
-            start_row=n_rows_target,
-            end_row=n_rows_validation,
+            start_row=validation_start_row,
+            end_row=total_rows_for_all_data,
             n_training_rows_for_backtest=n_training_rows_for_backtest,
             pipeline_id=pipeline_id,
             stage_id=stage_id,
@@ -392,14 +394,14 @@ class PipelineInterface:
         """
 
         if verbose:
-            terminal_messages.print_expert_message(f"Initialising Backtest from row {end_row} to row {start_row} (Pipeline {pipeline_id})")
+            terminal_messages.print_expert_message(f"Initialising Backtest from row {start_row} to row {end_row} (Pipeline {pipeline_id})")
 
         response = self.client.get(
             Endpoints.EXPERT_BACKTEST_FOR_STAGE_AND_HORIZON(
                 pipeline_id=pipeline_id,
                 horizon=horizon,
-                first_row=end_row,
-                last_row=start_row,
+                first_row=start_row,
+                last_row=end_row,
                 n_training_rows=n_training_rows_for_backtest,
                 stage_id=stage_id,
             )
@@ -677,7 +679,7 @@ class PipelineInterface:
             pbar.update()
             pipeline = self.create_pipeline(
                 dataset_id=augmented_dataset.summary.id_,
-                blueprint=BlueprintType.stationarisation,
+                blueprint=BlueprintType.time_series_regression,
                 name=f"TARGET={column_name}::TEMPLATE={pipeline_template.summary.name}",
             )
 
@@ -694,16 +696,6 @@ class PipelineInterface:
                 stage_id=pipeline.find_stage_by_type(StageType.problem_specification)[0].id_,
                 config=new_problem_spec_config,
             )
-
-            stationarisation_stage = pipeline.find_stage_by_type(StageType.stationarisation)[0]
-            stationarisation_config = cast(StationarisationStageConfig, stationarisation_stage.config)
-            stationarisation_config.strategy = StationarisationStrategy.none
-
-            self.update_config(pipeline_id=pipeline.summary.id_, stage_id=stationarisation_stage.id_, config=stationarisation_config)
-
-            pipeline = self.add_stage_to_end_of_pipeline(pipeline_id=pipeline.summary.id_, stage_type=StageType.backtest)
-
-            self.add_stage_to_end_of_pipeline(pipeline_id=pipeline.summary.id_, stage_type=StageType.prediction)
 
             if len(pipeline_template.find_stage_by_type(StageType.backtest)) > 0:
                 backtest_stage = pipeline_template.find_stage_by_type(StageType.backtest)[0]

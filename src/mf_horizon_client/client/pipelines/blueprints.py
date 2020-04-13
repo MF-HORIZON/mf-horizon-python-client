@@ -120,6 +120,41 @@ class BlueprintType(Enum):
 
     A. Forecast Specification
     B. Stationarization
+
+    Time-Series Regression
+    ===============================================================================================================
+    Run Horizon's regression algorithms on a pre-encoded signal set.
+
+    Small Data Forecasting
+    ===============================================================================================================
+    Time-series pipeline for small data. Does not contain any backtesting, and uses all the data for model training.
+
+    A. Forecast Specification
+    B. Stationarization
+    C. Linear Feature Generation
+    D. Feature Filtering
+    E. Feature Refinement
+    G. Linear Prediction
+
+    Variational Forecasting
+    ===============================================================================================================
+    Creates a stacked lag-embedding matrix by combining a two-stage feature generation and selection process, with
+    lag-only feature generation.
+
+    A. Forecast Specification
+    B. Stationarization
+    C. Linear Feature Generation
+    D. Feature Filtering
+    E. Linear Feature Generation
+    F. Feature Filtering
+    G. Linear Backtesting
+    H. Linear Prediction
+
+    Custom
+    ===============================================================================================================
+    Advanced: Contains only a forecast specification stage for adding stages manually.
+
+    N.B. There is no validation on stage addition.
     """
 
     nonlinear = "NONLINEAR"
@@ -129,3 +164,7 @@ class BlueprintType(Enum):
     feature_discovery = "FEATURE_DISCOVERY"
     signal_encoding = "SIGNAL_ENCODING"
     stationarisation = "STATIONARISATION"
+    time_series_regression = "REGRESSION_ONLY"
+    variational_forecasting = "VARIATIONAL_FORECASTING"
+    custom = "CUSTOM"
+    small_data = "SMALL_DATA"

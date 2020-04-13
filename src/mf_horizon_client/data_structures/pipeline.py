@@ -1,7 +1,6 @@
 from typing import List, Union
 
 from dataclasses import dataclass
-
 from mf_horizon_client.data_structures.configs.stage_status import StageStatus
 from mf_horizon_client.data_structures.configs.stage_types import StageType
 from mf_horizon_client.data_structures.dataset_summary import DatasetSummary

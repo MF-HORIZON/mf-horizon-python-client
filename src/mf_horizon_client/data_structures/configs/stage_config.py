@@ -197,12 +197,13 @@ class StationarisationStageConfig(StageConfig):
 
 class ProblemSpecificationConfig(StageConfig):
     def __init__(
-        self, target_feature: FeatureId, horizons: List[int], data_split: float, active_columns: List[int],
+        self, target_feature: FeatureId, horizons: List[int], data_split: float, active_columns: List[int], scale_factor_multiplier=1,
     ):
         self.target_feature = target_feature
         self.horizons = horizons
         self.data_split = data_split
         self.active_columns = active_columns
+        self.scale_factor_multiplier = scale_factor_multiplier
 
     def as_json(self) -> str:
         return json.dumps(
@@ -212,6 +213,7 @@ class ProblemSpecificationConfig(StageConfig):
                 "data_split": self.data_split,
                 "active_columns": self.active_columns,
                 "type": StageType.problem_specification.value,
+                "scale_factor_multiplier": self.scale_factor_multiplier,
             }
         )
 

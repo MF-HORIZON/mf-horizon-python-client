@@ -1,8 +1,8 @@
-from ._version import get_versions
-
 import mf_horizon_client.client
 import mf_horizon_client.data_structures
 import mf_horizon_client.schemas
+
+from ._version import get_versions
 
 # pylint: disable-all
 _versions_dict = get_versions()
