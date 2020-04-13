@@ -2,8 +2,9 @@
 mf-horizon-client
 =================
 
-Requires API keys to Mind Foundry Horizon to access.
+Requires API keys to Mind Foundry Horizon to access. API key can be accessed
+via the Settings panel of the Horizon UI.
 
-Compatible with release v2.0.6 of Mind Foundry Horizon.
+Compatible with release v2.1.1 of Mind Foundry Horizon.
 
 https://www.mindfoundry.ai/horizon

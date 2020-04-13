@@ -19,12 +19,14 @@ pipeline_interface = client.pipeline_interface()
 
 df = pd.DataFrame(pd.date_range("2000", "2002"))
 
-for c in "ABCD":
+for c in "ABC":
     df[c] = np.random.randn(len(df))
 
 dataset = data_interface.upload_data(data=df, name="ALPHABET")
 
-template_pipeline = pipeline_interface.create_pipeline(dataset_id=dataset.summary.id_, blueprint=BlueprintType.nonlinear, name="TEMPLATE")
+template_pipeline = pipeline_interface.create_pipeline(
+    dataset_id=dataset.summary.id_, blueprint=BlueprintType.fast_forecasting, name="TEMPLATE"
+)
 
 problem_spec_config = template_pipeline.find_stage_by_type(StageType.problem_specification)[0].config
 problem_spec_config = cast(ProblemSpecificationConfig, problem_spec_config)
