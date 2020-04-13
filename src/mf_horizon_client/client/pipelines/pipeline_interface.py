@@ -6,12 +6,13 @@ from typing import Any, Dict, List, cast
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-
 from mf_horizon_client.client.datasets.data_interface import DataInterface
 from mf_horizon_client.client.pipelines.blueprints import BlueprintType
 from mf_horizon_client.client.pipelines.construct_pipeline_class import construct_pipeline_class
-from mf_horizon_client.data_structures.configs.stage_config import ProblemSpecificationConfig, StageConfig, StationarisationStageConfig
-from mf_horizon_client.data_structures.configs.stage_config_enums import StationarisationStrategy
+from mf_horizon_client.data_structures.configs.stage_config import (
+    ProblemSpecificationConfig,
+    StageConfig,
+)
 from mf_horizon_client.data_structures.configs.stage_types import StageType
 from mf_horizon_client.data_structures.pipeline import Pipeline
 from mf_horizon_client.data_structures.stage import Stage
@@ -110,10 +111,10 @@ class PipelineInterface:
 
         assert len(stages_matching_id) == 1, "No stage found with given identifier"
         assert config.valid_configuration_values, "Invalid numeric configuration specified"
-        config_dict = json.loads(config.as_json())
+        config_dict = dict(config=convert_dict_from_snake_to_camel(json.loads(config.as_json())), preview=False)
 
         self.client.put(
-            Endpoints.UPDATE_STAGE_CONFIGURATION(pipeline_id, stage_id), json=convert_dict_from_snake_to_camel(config_dict),
+            Endpoints.UPDATE_STAGE_CONFIGURATION(pipeline_id, stage_id), json=config_dict,
         )
 
     @catch_errors
@@ -677,7 +678,7 @@ class PipelineInterface:
             pbar.update()
             pipeline = self.create_pipeline(
                 dataset_id=augmented_dataset.summary.id_,
-                blueprint=BlueprintType.stationarisation,
+                blueprint=BlueprintType.time_series_regression,
                 name=f"TARGET={column_name}::TEMPLATE={pipeline_template.summary.name}",
             )
 
@@ -694,16 +695,6 @@ class PipelineInterface:
                 stage_id=pipeline.find_stage_by_type(StageType.problem_specification)[0].id_,
                 config=new_problem_spec_config,
             )
-
-            stationarisation_stage = pipeline.find_stage_by_type(StageType.stationarisation)[0]
-            stationarisation_config = cast(StationarisationStageConfig, stationarisation_stage.config)
-            stationarisation_config.strategy = StationarisationStrategy.none
-
-            self.update_config(pipeline_id=pipeline.summary.id_, stage_id=stationarisation_stage.id_, config=stationarisation_config)
-
-            pipeline = self.add_stage_to_end_of_pipeline(pipeline_id=pipeline.summary.id_, stage_type=StageType.backtest)
-
-            self.add_stage_to_end_of_pipeline(pipeline_id=pipeline.summary.id_, stage_type=StageType.prediction)
 
             if len(pipeline_template.find_stage_by_type(StageType.backtest)) > 0:
                 backtest_stage = pipeline_template.find_stage_by_type(StageType.backtest)[0]

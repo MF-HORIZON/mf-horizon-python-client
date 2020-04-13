@@ -1,11 +1,10 @@
 from typing import cast
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from mf_horizon_client.client.horizon_client import HorizonClient
 from mf_horizon_client.client.pipelines.blueprints import BlueprintType
 from mf_horizon_client.data_structures.configs.stage_config import ProblemSpecificationConfig
-from mf_horizon_client.data_structures.configs.stage_config_enums import RegressorType
 from mf_horizon_client.data_structures.configs.stage_types import StageType
 
 URL = "https:// <<MY HORIZON URL >>"
@@ -20,12 +19,12 @@ pipeline_interface = client.pipeline_interface()
 
 df = pd.DataFrame(pd.date_range("2000", "2002"))
 
-for c in "AB":
+for c in "ABCD":
     df[c] = np.random.randn(len(df))
 
 dataset = data_interface.upload_data(data=df, name="ALPHABET")
 
-template_pipeline = pipeline_interface.create_pipeline(dataset_id=dataset.summary.id_, blueprint=BlueprintType.linear, name="TEMPLATE")
+template_pipeline = pipeline_interface.create_pipeline(dataset_id=dataset.summary.id_, blueprint=BlueprintType.nonlinear, name="TEMPLATE")
 
 problem_spec_config = template_pipeline.find_stage_by_type(StageType.problem_specification)[0].config
 problem_spec_config = cast(ProblemSpecificationConfig, problem_spec_config)
