@@ -546,10 +546,13 @@ class PipelineInterface:
                     pipeline_id=pipeline_template.summary.id_, stage_id=template_stage.id_, config=template_stage.config,
                 )
 
-            config = pipeline.find_stage_by_type(StageType.problem_specification)[0].config
+            stage = pipeline.find_stage_by_type(StageType.problem_specification)[0]
+            config = stage.config
             config = cast(ProblemSpecificationConfig, config)
             config.target_feature = str(column_id)
-
+            self.update_config(
+                pipeline_id=pipeline.summary.id_, stage_id=stage.id_, config=config,
+            )
             pipeline = self.run_pipeline(pipeline_id=pipeline.summary.id_, synchronous=True, verbose=False)
 
             forecast = self.get_future_predictions_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.last_completed_stage.id_)
