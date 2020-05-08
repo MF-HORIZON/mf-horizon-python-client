@@ -523,7 +523,7 @@ class PipelineInterface:
 
         pipeline_ids = []
         pbar = tqdm(total=len(column_ids))
-        pbar.set_description(f"\nRunning Multitarget Forecast")
+        pbar.set_description("\nRunning Multitarget Forecast")
 
         forecasts = []
         backtests = []
@@ -673,7 +673,7 @@ class PipelineInterface:
 
         pipeline_ids = []
         pbar = tqdm(total=len(column_ids))
-        pbar.set_description(f"\nRunning Multitarget Forecast")
+        pbar.set_description("\nRunning Multitarget Forecast")
 
         forecasts = []
         backtests = []
