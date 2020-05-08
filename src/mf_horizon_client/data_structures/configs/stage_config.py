@@ -256,6 +256,7 @@ class FeatureGenerationStageConfig(StageConfig):
                 FeatureGeneratorType.lag,
                 FeatureGeneratorType.logarithm,
                 FeatureGeneratorType.rolling_average,
+                FeatureGeneratorType.num_peaks,
             ],
         )
 
