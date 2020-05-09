@@ -101,8 +101,9 @@ class HorizonSession:
         """Make a GET request to Horizon
 
         Args:
-            endpoint (str): Endpoint for the request (will be appended to the server_url).
-            query_params (Dict, optional): Query parameters in Dict format (will be appended to the url).
+            endpoint: Endpoint for the request (will be appended to the server_url).
+            query_params: Query parameters in Dict format (will be appended to the url).
+            download: True if request returns download blob.
 
         Returns:
             The :class:`.HorizonResponse` to the request.
