@@ -6,6 +6,7 @@ from typing import Any, Dict, List, cast
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from mf_horizon_client.data_structures.feature_id import FeatureId
 from mf_horizon_client.client.datasets.data_interface import DataInterface
 from mf_horizon_client.client.pipelines.blueprints import BlueprintType
 from mf_horizon_client.client.pipelines.construct_pipeline_class import construct_pipeline_class
@@ -37,7 +38,7 @@ class PipelineInterface:
         self.client = client
 
     @catch_errors
-    def create_pipeline(self, dataset_id: int, blueprint: BlueprintType, name: str) -> Pipeline:
+    def create_pipeline(self, dataset_id: int, blueprint: BlueprintType, name: str, delete_after_creation=False,) -> Pipeline:
         """
         Creates a pipeline, which is a set of stages coupled with a data set. Pipelines are the core
         component in Horizon, and are instantiated via reference to a 'blueprint' - the equivalent of a
@@ -52,11 +53,16 @@ class PipelineInterface:
         :param dataset_id: Unique identifier of a dataset.
         :param blueprint: Desired pipeline blueprint type
         :param name: User-specified pipeline name
+        :param delete_after_creation: Deletes pipeline immediately after creation if set to true
         """
 
         pipeline = self.client.put(Endpoints.PIPELINES, json={"name": name, "datasetId": dataset_id, "blueprint": blueprint.name},)
+        pipeline = self.get_single_pipeline(construct_pipeline_class(pipeline).summary.id_)
 
-        return self.get_single_pipeline(construct_pipeline_class(pipeline).summary.id_)
+        if delete_after_creation:
+            self.delete_pipelines([pipeline.summary.id_])
+
+        return pipeline
 
     @catch_errors
     def list_pipelines(self) -> List[Pipeline]:
@@ -440,7 +446,7 @@ class PipelineInterface:
         Deletes pipelines as identified by their identifiers.
         These may be retrieved by calling DataInterface.list_pipelines.
 
-        :param identifiers: list of numeric pipeline identifiers
+        :param pipeline_ids: list of numeric pipeline identifiers
         :return:
         """
 
@@ -464,23 +470,67 @@ class PipelineInterface:
 
     ## EXPERIMENTAL FUNCTIONS BELOW THIS LINE.
 
-    def add_stage_to_end_of_pipeline(self, pipeline_id: int, stage_type: StageType) -> Pipeline:
+    def add_stage_to_pipeline(self, pipeline_id: int, parent_stage_id: int, stage_type: StageType,) -> Pipeline:
         """
         EXPERIMENTAL
 
-        Adds a stage to the end of a pipeline.
+        Adds a stage after specified parent_stage_id.
 
         :param pipeline_id: Unique pipeline identifier
+        :param parent_stage_id: ID of the stage preceding desired location of added stage
         :param stage_type: Type of stage to add
-        :param config: Optional stage configuration
         :return: Pipeline with new stage added
         """
 
-        body = {"parentStage": None, "stageType": stage_type.name}
+        body = {"parentStage": parent_stage_id, "stageType": stage_type.name}
 
         pipeline = construct_pipeline_class(self.client.put(Endpoints.STAGES(pipeline_id), json=body,))
 
         return self.get_single_pipeline(pipeline.summary.id_)
+
+    def _build_pipeline_from_template(self, target_column_name: str, pipeline_template: Pipeline):
+        """
+        Takes a pipeline template object and builds a duplicated pipeline copy of the template, with the
+        target specified as the column_name.
+
+        :param target_column_name: Name of the target column
+        :param pipeline_template: Template pipeline
+        :return:
+        """
+
+        assert pipeline_template.dataset.columns, "Please pass a fully define dpipeline template using fetch_pipeline."
+
+        target_column_id = [col.id_ for col in pipeline_template.dataset.columns if str(col.name) == target_column_name][0]
+
+        pipeline = self.create_pipeline(
+            dataset_id=pipeline_template.dataset.id_,
+            blueprint=BlueprintType.custom,
+            name=f"{pipeline_template.summary.name}/{target_column_name}",
+        )
+
+        index = 0
+        problem_specification_stage = pipeline.find_stage_by_type(StageType.problem_specification)[0]
+        parent_id = problem_specification_stage.id_
+
+        # Enumerate irritates the type casting
+        for template_stage in pipeline_template.stages:
+
+            if index == 0:
+                config = pipeline_template.find_stage_by_type(StageType.problem_specification)[0].config
+                cast(ProblemSpecificationConfig, config).target_feature = FeatureId(target_column_id)
+                self.update_config(
+                    pipeline_id=pipeline.summary.id_, stage_id=problem_specification_stage.id_, config=config,
+                )
+            else:
+                pipeline = self.add_stage_to_pipeline(
+                    pipeline_id=pipeline.summary.id_, parent_stage_id=parent_id, stage_type=StageType[template_stage.type]
+                )
+
+                stage = pipeline.find_stage_by_type(StageType[template_stage.type])[0]
+                self.update_config(pipeline_id=pipeline.summary.id_, stage_id=stage.id_, config=template_stage.config)
+                parent_id = stage.id_
+            index += 1
+        return pipeline
 
     def run_multitarget_forecast(
         self,
@@ -492,9 +542,6 @@ class PipelineInterface:
         one_point_backtests=False,
     ) -> Dict[str, pd.DataFrame]:
         """
-
-        EXPERIMENTAL - NEEDS HEAVY REFACTORING
-
         Creates a multi target forecast by looping through all specified targets.
 
         Feature engineering is run independently for each target.
@@ -504,79 +551,39 @@ class PipelineInterface:
         :param column_names: List of names of columns to run analysis with. Do not specify this and ids together.
         :param column_ids: List of ids of columns to run analysis with. Do not specify this and names together.
         :param one_point_backtests: Runs expert backtests. If false then n_training_rows_for_one_point_backtest is ignored.
-
-        :return:
         """
         assert column_names == -1 or column_ids == -1, "Please only specify one of column_ids or column_names"
 
-        terminal_messages.print_expert_message(
-            "This feature is experimental and can be very computationally intensive."
-            "Please ensure that you have no queued or pending pipelines prior to "
-            "running this method."
-        )
-
-        if column_ids == -1:
-            column_ids = [column.id_ for column in pipeline_template.dataset.columns if column.name in column_names]  # type: ignore
+        terminal_messages.print_expert_message("Please ensure that you have no queued or pending pipelines.")
 
         if column_names == -1:
             column_names = [column.name for column in pipeline_template.dataset.columns if str(column.id_) in column_ids]  # type: ignore
 
-        pipeline_ids = []
-        pbar = tqdm(total=len(column_ids))
+        pbar = tqdm(total=len(column_names))
         pbar.set_description("\nRunning Multitarget Forecast")
 
         forecasts = []
         backtests = []
 
-        for column_id, column_name in zip(column_ids, column_names):
+        for column_name in column_names:
             pbar.update()
-            pipeline = self.create_pipeline(
-                dataset_id=pipeline_template.dataset.id_,
-                blueprint=BlueprintType[pipeline_template.summary.blueprint],
-                name=f"{pipeline_template.summary.name}::TARGET={column_name}",
-            )
-
-            pipeline_ids.append(pipeline.summary.id_)
-
-            for stage, template_stage in zip(pipeline.stages, pipeline_template.stages):
-                self.update_config(
-                    pipeline_id=pipeline.summary.id_, stage_id=stage.id_, config=template_stage.config,
-                )
-                self.update_config(
-                    pipeline_id=pipeline_template.summary.id_, stage_id=template_stage.id_, config=template_stage.config,
-                )
-
-            stage = pipeline.find_stage_by_type(StageType.problem_specification)[0]
-            config = stage.config
-            config = cast(ProblemSpecificationConfig, config)
-            config.target_feature = str(column_id)
-            self.update_config(
-                pipeline_id=pipeline.summary.id_, stage_id=stage.id_, config=config,
-            )
+            pipeline = self._build_pipeline_from_template(column_name, pipeline_template)
             pipeline = self.run_pipeline(pipeline_id=pipeline.summary.id_, synchronous=True, verbose=False)
-
             forecast = self.get_future_predictions_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.last_completed_stage.id_)
-
             forecast.index = pd.to_datetime(forecast.index.astype(int) * 1000000)
             forecast["Series"] = column_name
             forecasts.append(forecast)
-
             problem_specification_stage = pipeline.find_stage_by_type(StageType.problem_specification)[0]
             problem_specification_config = cast(ProblemSpecificationConfig, problem_specification_stage.config)
-
             backtest = self.run_backtesting_for_multitarget(
                 n_training_rows_for_one_point_backtest, one_point_backtests, pipeline, problem_specification_config
             )
-
-            backtest.columns = backtest.columns + "::" + column_name
+            backtest.columns = backtest.columns + "/" + column_name
             backtests.append(backtest)
 
         all_backtests = pd.concat(backtests, axis=1, sort=False)
         all_forecasts = pd.concat(forecasts, axis=0, sort=False)
-
-        self.delete_pipelines(pipeline_ids=[pipeline_template.summary.id_])
-
-        return {"backtests": all_backtests, "forecasts": all_forecasts}
+        return {"backtests": all_backtests.dropna(), "forecasts": all_forecasts}
 
     def run_backtesting_for_multitarget(
         self, n_training_rows_for_one_point_backtest, one_point_backtests, pipeline, problem_specification_config
@@ -609,8 +616,6 @@ class PipelineInterface:
     ) -> Dict[str, pd.DataFrame]:
         """
 
-        EXPERIMENTAL - NEEDS HEAVY REFACTORING
-
         Creates a multi target forecast by looping through all specified targets.
 
         Feature engineering is run ONCE for the specified target
@@ -623,33 +628,15 @@ class PipelineInterface:
         :return: Dictionary of results
         """
 
-        assert column_names == -1 or column_ids == -1, "Please only specify one of column_ids or column_names"
-
-        terminal_messages.print_expert_message(
-            "This feature is experimental and can be very computationally intensive. "
-            "Please ensure that you have no queued or pending pipelines prior to "
-            "running this method."
-        )
-
         pipeline_columns = pipeline_template.dataset.columns
-
-        if column_ids == -1:
-            column_ids = [column.id_ for column in pipeline_columns if column.name in column_names]  # type: ignore
 
         if column_names == -1:
             column_names = [column.name for column in pipeline_columns if str(column.id_) in column_ids]  # type: ignore
 
-        template_problem_spec_config = pipeline_template.find_stage_by_type(StageType.problem_specification)[0].config
-        template_problem_spec_config = cast(ProblemSpecificationConfig, template_problem_spec_config)
-
-        assert len(template_problem_spec_config.horizons) == 1, "Multi-Target is only supported for a one-step prediction."
-
-        pipeline = self.get_single_pipeline(pipeline_id=pipeline_template.summary.id_)
+        pipeline = self._build_pipeline_from_template(target_column_name=column_names[0], pipeline_template=pipeline_template)
 
         for stage, template_stage in zip(pipeline.stages, pipeline_template.stages):
-            self.update_config(
-                pipeline_id=pipeline.summary.id_, stage_id=stage.id_, config=template_stage.config,
-            )
+            self.update_config(pipeline_id=pipeline.summary.id_, stage_id=stage.id_, config=template_stage.config)
 
         terminal_messages.print_update("Running Template Pipeline for Feature Discovery")
         self.run_pipeline(pipeline_id=pipeline.summary.id_, synchronous=True)
@@ -657,8 +644,9 @@ class PipelineInterface:
         pipeline = self.get_single_pipeline(pipeline_id=pipeline.summary.id_)
         terminal_messages.print_success("Successfully run feature generation. Exporting Data.")
 
-        features = self.download_feature_info_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.last_completed_stage.id_)
-        original_data = self.download_feature_info_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.stages[0].id_)
+        features = self.download_feature_info_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.last_completed_stage.id_,)
+
+        original_data = self.download_feature_info_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.stages[0].id_,)
 
         augmented_features = pd.concat(features.values(), axis=1, sort=False)
         augmented_features = pd.concat([augmented_features, *original_data.values()], axis=1, sort=False)
@@ -668,64 +656,26 @@ class PipelineInterface:
         data_interface = DataInterface(self.client)
 
         augmented_dataset = data_interface.upload_data(
-            data=augmented_features_no_duplicates, name=f"OUTPUT_FEATURES::{pipeline.summary.name}"
+            data=augmented_features_no_duplicates, name=f"Features {pipeline_template.summary.name}",
         )
 
-        pipeline_ids = []
-        pbar = tqdm(total=len(column_ids))
-        pbar.set_description("\nRunning Multitarget Forecast")
+        template_pipeline_regression_only = self.create_pipeline(
+            dataset_id=augmented_dataset.summary.id_,
+            blueprint=BlueprintType.time_series_regression,
+            name=pipeline_template.summary.name,
+            delete_after_creation=True,
+        )
 
-        forecasts = []
-        backtests = []
+        regression_template_problem_spec_config = cast(ProblemSpecificationConfig, template_pipeline_regression_only.stages[0].config,)
 
-        for column_name in column_names:
-            pbar.update()
-            pipeline = self.create_pipeline(
-                dataset_id=augmented_dataset.summary.id_,
-                blueprint=BlueprintType.time_series_regression,
-                name=f"TARGET={column_name}::TEMPLATE={pipeline_template.summary.name}",
-            )
+        original_template_problem_spec_config = cast(ProblemSpecificationConfig, pipeline_template.stages[0].config,)
 
-            pipeline_ids.append(pipeline.summary.id_)
+        regression_template_problem_spec_config.data_split = original_template_problem_spec_config.data_split
+        regression_template_problem_spec_config.horizons = original_template_problem_spec_config.horizons
 
-            new_problem_spec_config = pipeline.find_stage_by_type(StageType.problem_specification)[0].config
-            new_problem_spec_config.target_feature = [
-                column.id_ for column in augmented_dataset.summary.columns if column.name == column_name  # type: ignore
-            ][0]
-            new_problem_spec_config.horizons = template_problem_spec_config.horizons
-
-            self.update_config(
-                pipeline_id=pipeline.summary.id_,
-                stage_id=pipeline.find_stage_by_type(StageType.problem_specification)[0].id_,
-                config=new_problem_spec_config,
-            )
-
-            if len(pipeline_template.find_stage_by_type(StageType.backtest)) > 0:
-                backtest_stage = pipeline_template.find_stage_by_type(StageType.backtest)[0]
-                backtest_config = backtest_stage.config
-                self.update_config(
-                    pipeline_id=pipeline.summary.id_,
-                    stage_id=pipeline.find_stage_by_type(StageType.backtest)[0].id_,
-                    config=backtest_config,
-                )
-
-            pipeline_ids.append(pipeline.summary.id_)
-
-            pipeline = self.run_pipeline(pipeline_id=pipeline.summary.id_, synchronous=True, verbose=False,)
-            forecast = self.get_future_predictions_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.last_completed_stage.id_)
-
-            forecast.index = pd.to_datetime(forecast.index.astype(int) * 1000000)
-            forecast["Series"] = column_name
-            forecasts.append(forecast)
-
-            backtest = self.run_backtesting_for_multitarget(
-                n_training_rows_for_one_point_backtest or 30, one_point_backtests, pipeline, new_problem_spec_config,
-            )
-
-            backtest.columns = backtest.columns + "::" + column_name
-            backtests.append(backtest)
-
-        all_backtests = pd.concat(backtests, axis=1, sort=False)
-        all_forecasts = pd.concat(forecasts, axis=0, sort=False)
-
-        return {"backtests": all_backtests, "forecasts": all_forecasts}
+        return self.run_multitarget_forecast(
+            pipeline_template=template_pipeline_regression_only,
+            column_names=column_names,
+            one_point_backtests=one_point_backtests,
+            n_training_rows_for_one_point_backtest=n_training_rows_for_one_point_backtest,
+        )

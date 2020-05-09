@@ -270,3 +270,42 @@ class DataInterface:
         mutual_information_data.columns = ["Series", "Mutual Information"]
         mutual_information_data.name = series_name
         return mutual_information_data
+
+    @catch_errors
+    def upload_data_long_format_as_single_data_set(
+        self,
+        data: pd.DataFrame,
+        name: str,
+        cross_section_column_name: str,
+        date_column_name: str,
+        replace_missing_values: bool = True,
+        forward_fill_missing_values: bool = False,
+        encode_categorical_data=True,
+        max_categories=5,
+    ) -> IndividualDataset:
+        """
+        Uploads long format data into Horizon. The data frame should have a date column, with a numeric index.
+
+        :param data: The dataset in a pandas data frame. Must have a valid date column.
+        :param name: Name of the data set to be uploaded
+        :param cross_section_column_name: The identifier column that groups the records
+        :param date_column_name: The column name of the date index.
+        :param forward_fill_missing_values: Forward-fill missing values
+        :param replace_missing_values: Replace missing values
+        :return: A summary of the uploaded data set.
+        :param encode_categorical_data: Categorically encode data that is non-numeric
+        :param max_categories: Maximum number of categories per series.
+        """
+
+        df = data.pivot_table(columns=cross_section_column_name, index=date_column_name)
+        df.reset_index(inplace=True)
+        df.columns = ["/".join(column) for column in df.columns]
+
+        return self.upload_data(
+            data=df,
+            name=name,
+            forward_fill_missing_values=forward_fill_missing_values,
+            replace_missing_values=replace_missing_values,
+            encode_categorical_data=encode_categorical_data,
+            max_categories=max_categories,
+        )
