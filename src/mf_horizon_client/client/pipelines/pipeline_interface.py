@@ -1,11 +1,12 @@
 import json
 from io import StringIO
 from time import sleep
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, cast, Union
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from mf_horizon_client.post_processing.backtests import binary_backtests_returns, calculate_metrics, recommender
 from mf_horizon_client.data_structures.feature_id import FeatureId
 from mf_horizon_client.client.datasets.data_interface import DataInterface
 from mf_horizon_client.client.pipelines.blueprints import BlueprintType
@@ -354,7 +355,7 @@ class PipelineInterface:
         validation_start_row = int(np.ceil(config.data_split * total_rows_for_all_data))
         rows_in_validation_set = total_rows_for_all_data - validation_start_row
 
-        assert rows_in_validation_set / 2 > n_training_rows_for_backtest, "Too many training rows selected"
+        assert rows_in_validation_set / 1.2 > n_training_rows_for_backtest, "Too many training rows selected"
         assert n_training_rows_for_backtest > 20, "Please select at least 20 training rows"
 
         return self.run_expert_backtest_between_two_rows(
@@ -498,7 +499,7 @@ class PipelineInterface:
         :return:
         """
 
-        assert pipeline_template.dataset.columns, "Please pass a fully define dpipeline template using fetch_pipeline."
+        assert pipeline_template.dataset.columns, "Please pass a fully defined pipeline template using fetch_pipeline."
 
         target_column_id = [col.id_ for col in pipeline_template.dataset.columns if str(col.name) == target_column_name][0]
 
@@ -679,3 +680,123 @@ class PipelineInterface:
             one_point_backtests=one_point_backtests,
             n_training_rows_for_one_point_backtest=n_training_rows_for_one_point_backtest,
         )
+
+    @catch_errors
+    def directional_response_regression(
+        self,
+        *,
+        data: pd.DataFrame,
+        target_column: str,
+        cross_section_column_name: str,
+        date_column_name: str,
+        discrete_value_dates: pd.Series = None,
+        train_up_to_row: int = None,
+        n_training_rows_for_one_point_backtest: Union[str, int] = "auto",
+        blueprint_type: BlueprintType = BlueprintType.nonlinear,
+        cleanup=True,
+    ):
+        """
+
+        EXPERIMENTAL - expect API to change
+
+        :param cleanup: Delete data set and pipelines after running
+        :param train_up_to_row: Any row after this will be used for validation / backtesting
+        :param blueprint_type: Pipeline blueprint type - see BlueprintType. Must be forecasting pipeline.
+        :param target_column: Target column to predict
+        :param data: data frame to upload
+        :param n_training_rows_for_one_point_backtest: Number of training rows to use for the regressor
+        :param cross_section_column_name: The identifier column that groups the records
+        :param discrete_value_dates: Long-format dates that are discrete points to measure performance against.
+        :param date_column_name: The column name of the date index.
+        :return: Dictionary of results
+        """
+        data_interface = DataInterface(self.client)
+
+        cross_section_variables = data[cross_section_column_name]
+        unique_cross_section_variables = cross_section_variables.unique().tolist()
+
+        dataset = data_interface.upload_data_long_format_as_single_data_set(
+            data=data, name="Panel", cross_section_column_name=cross_section_column_name, date_column_name=date_column_name,
+        )
+
+        data_split = train_up_to_row / dataset.summary.n_rows if train_up_to_row else 0.75
+
+        template_pipeline = self.create_pipeline(
+            dataset_id=dataset.summary.id_, blueprint=blueprint_type, name="TMP", delete_after_creation=True,
+        )
+
+        problem_spec_config = template_pipeline.find_stage_by_type(StageType.problem_specification)[0].config
+        problem_spec_config = cast(ProblemSpecificationConfig, problem_spec_config)
+        problem_spec_config.data_split = data_split
+        problem_spec_config.horizons = [1]
+
+        if n_training_rows_for_one_point_backtest == "auto":
+            n_rows_in_validation_data = int((1 - data_split) * dataset.summary.n_rows)
+            n_training_rows_for_one_point_backtest = int(n_rows_in_validation_data / 3)
+
+        results = self.run_multitarget_forecast(
+            pipeline_template=template_pipeline,
+            column_names=["/".join([target_column, var]) for var in unique_cross_section_variables],
+            one_point_backtests=True,
+            n_training_rows_for_one_point_backtest=n_training_rows_for_one_point_backtest,
+        )
+
+        directional_backtests = binary_backtests_returns(results["backtests"])
+
+        backtest_errors = pd.DataFrame()
+        average_scores = pd.DataFrame()
+        full_metrics = {}
+
+        discrete_values_full_metrics = {}
+        discrete_values_average_scores = pd.DataFrame()
+
+        for variable in unique_cross_section_variables:
+            # Calculate the continuous price scores
+            directions = pd.DataFrame()
+            directions["predictions"] = directional_backtests["/".join(["predictions", target_column, variable])]
+            directions["truths"] = directional_backtests["/".join(["truth", target_column, variable])]
+
+            # No movement in price --> assume no trading that day and drop the backtests
+            directions = directions.replace(0, np.nan).dropna()
+
+            backtest_errors[variable] = directions["predictions"] * directions["truths"]
+
+            classification_metrics = calculate_metrics(y_true=directions["truths"], y_pred=directions["predictions"],)
+            average_scores[variable] = pd.Series(
+                {"accuracy": classification_metrics["accuracy"], "f1_macro": classification_metrics["macro avg"]["f1-score"],}
+            )
+            full_metrics[variable] = classification_metrics
+
+            # Calculate the metrics just for reporting dates
+            if discrete_value_dates is not None:
+                y_discrete = directions[directions.index.isin(discrete_value_dates[discrete_value_dates == variable].index)]
+
+                discrete_values_full_metrics[variable] = calculate_metrics(y_true=y_discrete["truths"], y_pred=y_discrete["predictions"],)
+
+                discrete_values_average_scores[variable] = pd.Series(
+                    {
+                        "accuracy": discrete_values_full_metrics[variable]["accuracy"],
+                        "f1_macro": discrete_values_full_metrics[variable]["macro avg"]["f1-score"],
+                    }
+                )
+
+        last_observed_values = data[data[date_column_name] == data[date_column_name].max()]
+        last_observed_values.index = pd.Series(
+            "/".join([target_column, variable]) for variable in last_observed_values[cross_section_column_name]
+        )
+        last_observed_values = last_observed_values[target_column]
+
+        recommendations = recommender(last_observed_values=last_observed_values, predictions=results["forecasts"],)
+
+        if cleanup:
+            data_interface.delete_datasets([dataset.summary.id_])
+
+        return {
+            "average_scores": average_scores,
+            "full_metrics": full_metrics,
+            "discrete_values_full_metrics": discrete_values_full_metrics if discrete_value_dates is not None else -1,
+            "discrete_values_average_scores": discrete_values_average_scores if discrete_value_dates is not None else -1,
+            "backtests": directional_backtests,
+            "continuous_backtests": results["backtests"],
+            "predictions": recommendations,
+        }
