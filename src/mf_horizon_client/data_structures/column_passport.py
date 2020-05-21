@@ -14,6 +14,7 @@ class ColumnPassport:
     minimum: float
     maximum: float
     n_rows: int
+    is_text: bool
     adf: float
     quality: float
     intraday_available: bool
