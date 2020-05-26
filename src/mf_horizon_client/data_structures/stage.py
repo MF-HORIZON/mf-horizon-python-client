@@ -32,3 +32,4 @@ class Stage:
     type: str  # One of StageType.values
     config: StageConfig
     run_mode: StageRunMode
+    n_true_target_rows_for_plot: int = 500

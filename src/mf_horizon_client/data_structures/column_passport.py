@@ -11,6 +11,7 @@ class ColumnPassport:
     id_: int
     name: str
     cadence: pd.Timedelta
+    autocorrelations: any
     minimum: float
     maximum: float
     n_rows: int
