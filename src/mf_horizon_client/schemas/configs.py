@@ -56,7 +56,7 @@ class StationarisationConfigSchema(CamelCaseSchema):
 
 
 class ProblemSpecConfigSchema(CamelCaseSchema):
-    target_feature = fields.String(required=True)
+    target_features = fields.List(fields.String(required=False))
     horizons = fields.List(fields.Integer(required=True))
     data_split = fields.Float(required=True)
     active_columns = fields.List(fields.Integer(required=False))

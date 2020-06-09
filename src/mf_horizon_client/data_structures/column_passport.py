@@ -1,3 +1,5 @@
+from typing import Any
+
 import pandas as pd
 from dataclasses import dataclass
 
@@ -11,7 +13,7 @@ class ColumnPassport:
     id_: int
     name: str
     cadence: pd.Timedelta
-    autocorrelations: any
+    autocorrelations: Any
     minimum: float
     maximum: float
     n_rows: int

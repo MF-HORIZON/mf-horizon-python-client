@@ -188,6 +188,7 @@ class PipelineInterface:
 
         return pipeline
 
+    @catch_errors
     def get_insight_for_stage(self, pipeline_id: int, stage_id: int) -> Dict[str, Any]:
         """
         Fetches the high-level output results for a stage. Feature set information is retrieved using get_features_for_stage - the insights
@@ -296,6 +297,7 @@ class PipelineInterface:
 
         if verbose:
             pbar = tqdm(desc="Fetching Data")
+            pbar.total = len(horizons)
         else:
             pbar = None
 
@@ -348,14 +350,12 @@ class PipelineInterface:
         dataset = data_interface.get_dataset(dataset_id)
         assert dataset.summary.name == pipeline.summary.dataset_name, "Dataset id specified is different to the pipeline id"
 
-        assert int(config.target_feature) in dataset.summary.column_ids, "Dataset id specified is different to the pipeline id"
-
-        total_rows_for_all_data = [col.n_rows for col in dataset.analysis if str(col.id_) == str(config.target_feature)][0]
+        total_rows_for_all_data = min(*[col.n_rows for col in dataset.analysis])
 
         validation_start_row = int(np.ceil(config.data_split * total_rows_for_all_data))
         rows_in_validation_set = total_rows_for_all_data - validation_start_row
 
-        assert rows_in_validation_set / 1.2 > n_training_rows_for_backtest, "Too many training rows selected"
+        assert rows_in_validation_set / 1.1 > n_training_rows_for_backtest, "Too many training rows selected"
         assert n_training_rows_for_backtest > 20, "Please select at least 20 training rows"
 
         return self.run_expert_backtest_between_two_rows(
@@ -423,7 +423,7 @@ class PipelineInterface:
         df.index = pd.to_datetime(df.index)
         return df
 
-    def get_future_predictions_for_stage(self, pipeline_id: int, stage_id: int) -> pd.DataFrame:
+    def get_future_predictions_for_stage(self, pipeline_id: int, stage_id: int) -> Dict[str, pd.DataFrame]:
         """
         Gets the future predictions for a prediction stage
 
@@ -437,9 +437,16 @@ class PipelineInterface:
         :return:
         """
         insight = self.get_insight_for_stage(pipeline_id=pipeline_id, stage_id=stage_id)
-        df = pd.DataFrame.from_records([convert_dict_from_camel_to_snake(prediction) for prediction in insight["predictions"]])
-        df.set_index("date", inplace=True)
-        return df
+        targets = insight["targets"].keys()
+        predictions = {}
+
+        for target in targets:
+            df = pd.DataFrame(insight["targets"][target]["predictions"])
+            df.set_index("date", inplace=True)
+            df.index = pd.to_datetime(10 ** 6 * df.index.astype(int))
+            predictions[insight["targets"][target]["targetColumn"]] = df
+
+        return predictions
 
     @catch_errors
     def delete_pipelines(self, pipeline_ids: List[int]):
@@ -518,7 +525,7 @@ class PipelineInterface:
 
             if index == 0:
                 config = pipeline_template.find_stage_by_type(StageType.problem_specification)[0].config
-                cast(ProblemSpecificationConfig, config).target_feature = FeatureId(target_column_id)
+                cast(ProblemSpecificationConfig, config).target_features = [FeatureId(target_column_id)]
                 self.update_config(
                     pipeline_id=pipeline.summary.id_, stage_id=problem_specification_stage.id_, config=config,
                 )
@@ -541,8 +548,10 @@ class PipelineInterface:
         column_ids: List = -1,  # type: ignore
         n_training_rows_for_one_point_backtest=None,
         one_point_backtests=False,
-    ) -> Dict[str, pd.DataFrame]:
+    ) -> Dict[str, Any]:
         """
+        DEPRECATED - NOW SUPPORTED NATIVELY IN THE PROBLEM SPEC CONFIG
+
         Creates a multi target forecast by looping through all specified targets.
 
         Feature engineering is run independently for each target.
@@ -571,7 +580,7 @@ class PipelineInterface:
             pipeline = self._build_pipeline_from_template(column_name, pipeline_template)
             pipeline = self.run_pipeline(pipeline_id=pipeline.summary.id_, synchronous=True, verbose=False)
             forecast = self.get_future_predictions_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.last_completed_stage.id_)
-            forecast.index = pd.to_datetime(forecast.index.astype(int) * 1000000)
+            forecast[column_name].index = pd.to_datetime(forecast[column_name].index)
             forecast["Series"] = column_name
             forecasts.append(forecast)
             problem_specification_stage = pipeline.find_stage_by_type(StageType.problem_specification)[0]
@@ -583,7 +592,7 @@ class PipelineInterface:
             backtests.append(backtest)
 
         all_backtests = pd.concat(backtests, axis=1, sort=False)
-        all_forecasts = pd.concat(forecasts, axis=0, sort=False)
+        all_forecasts = pd.concat([list(result.values())[0] for result in forecasts], sort=False, axis=0)
         return {"backtests": all_backtests.dropna(), "forecasts": all_forecasts}
 
     def run_backtesting_for_multitarget(
@@ -616,6 +625,8 @@ class PipelineInterface:
         one_point_backtests=False,
     ) -> Dict[str, pd.DataFrame]:
         """
+
+        DEPRECATED - NOW SUPPORTED NATIVELY IN THE PROBLEM SPECIFICATION STAGE CONFIG
 
         Creates a multi target forecast by looping through all specified targets.
 

@@ -140,7 +140,7 @@ class RefinementStageConfig(StageConfig):
             return False
         if self.early_stopping_sensitivity < 0:
             return False
-        if self.max_features > 50:
+        if self.max_features > 70:
             return False
         if self.max_features < self.min_features:
             return False
@@ -197,9 +197,14 @@ class StationarisationStageConfig(StageConfig):
 
 class ProblemSpecificationConfig(StageConfig):
     def __init__(
-        self, target_feature: FeatureId, horizons: List[int], data_split: float, active_columns: List[int], scale_factor_multiplier=1,
+        self,
+        target_features: List[FeatureId],
+        horizons: List[int],
+        data_split: float,
+        active_columns: List[int],
+        scale_factor_multiplier=1,
     ):
-        self.target_feature = target_feature
+        self.target_features = target_features
         self.horizons = horizons
         self.data_split = data_split
         self.active_columns = active_columns
@@ -208,7 +213,7 @@ class ProblemSpecificationConfig(StageConfig):
     def as_json(self) -> str:
         return json.dumps(
             {
-                "target_feature": str(self.target_feature),
+                "target_features": self.target_features,
                 "horizons": self.horizons,
                 "data_split": self.data_split,
                 "active_columns": self.active_columns,
@@ -220,7 +225,7 @@ class ProblemSpecificationConfig(StageConfig):
     @classmethod
     def get_default(cls) -> "ProblemSpecificationConfig":
         return ProblemSpecificationConfig(
-            target_feature=FeatureId("unspecified"), horizons=[1, 2, 3, 4, 5], data_split=0.75, active_columns=[],
+            target_features=[FeatureId("unspecified")], horizons=[1, 2, 3, 4, 5], data_split=0.75, active_columns=[],
         )
 
     @classmethod

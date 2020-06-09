@@ -18,4 +18,6 @@ pipeline = pipeline_interface.create_pipeline(
     dataset_id=dataset.summary.id_, name="Test Pipeline", blueprint=BlueprintType.fast_forecasting,
 )
 
-pipeline_interface.run_pipeline(pipeline_id=pipeline.summary.id_, synchronous=False)
+pipeline_interface.directional_response_regression(
+
+)
