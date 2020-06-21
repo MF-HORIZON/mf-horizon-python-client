@@ -1,3 +1,4 @@
+import requests
 from mf_horizon_client.client.datasets.data_interface import DataInterface
 from mf_horizon_client.client.pipelines.pipeline_interface import PipelineInterface
 from mf_horizon_client.client.session import HorizonSession
@@ -37,14 +38,20 @@ class HorizonClient(HorizonSession):
         if not max_concurrent_pipelines:
             print(Warnings.NO_MAX_FIRE_AND_FORGET_WORKERS_SPECIFIED)
         self._max_concurrent_tasks = max_concurrent_pipelines
+        self.validate_connection()
 
     def validate_connection(self):
         """
         Checks that the connection is still open and valid
         """
-        health = self.get(ENDPOINTS.HEALTH)
-        if health["status"] != "ok":
-            raise ConnectionError("API Error - please close and re-open connection.")
+        try:
+            self.get(ENDPOINTS.ALL_DATASETS)
+        except requests.exceptions.ConnectionError:
+            raise ConnectionError(
+                "Failed to connect to Horizon API - likely network error or incorrect URL. " "Have you included `https://` in the URL?"
+            )
+        except requests.exceptions.RetryError:
+            raise ConnectionError("Failed to connect to Horizon API - likely incorrect API key.")
 
     def horizon_compute_status(self) -> dict:
         """

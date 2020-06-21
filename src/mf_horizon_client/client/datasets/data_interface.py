@@ -1,21 +1,19 @@
 import io
+import json
 from typing import List
 
 import dataclasses
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-
 from mf_horizon_client.data_structures.column_passport import ColumnPassport
 from mf_horizon_client.data_structures.dataset_summary import DatasetSummary
 from mf_horizon_client.data_structures.individual_dataset import IndividualDataset
 from mf_horizon_client.data_structures.raw_column import RawColumn
 from mf_horizon_client.endpoints import Endpoints
 from mf_horizon_client.utils.catch_method_exception import catch_errors
-from mf_horizon_client.utils.string_case_converters import (
-    convert_dict_from_camel_to_snake,
-)
-from mf_horizon_client.utils.terminal_messages import print_success
+from mf_horizon_client.utils.string_case_converters import convert_dict_from_camel_to_snake
+from mf_horizon_client.utils.terminal_messages import print_success, print_warning
 
 
 class DataInterface:
@@ -25,13 +23,24 @@ class DataInterface:
         """
         self.client = client
 
-    def upload_data(self, data: pd.DataFrame, name: str) -> IndividualDataset:
+    def upload_data(
+        self,
+        data: pd.DataFrame,
+        name: str,
+        forward_fill_missing_values: bool = False,
+        replace_missing_values: bool = False,
+        align_to_column: str = "",
+    ) -> IndividualDataset:
         """
         Uploads the given data set to the Horizon API.
-        Data should have no missing values, and must also have a column with time values.
 
+        :param align_to_column: Aligns data to column if the data is misaligned. This should be selected as the target
+        if data is misaligned or has missing values. Selecting this will also cause missing data in the specified
+        column to be dropped.
         :param data: DataFrame to be uploaded
         :param name: Name of the data set to be uploaded
+        :param forward_fill_missing_values: Forward-fill missing values
+        :param replace_missing_values: Replace missing values
         :return: A summary of the uploaded data set.
         """
 
@@ -39,12 +48,26 @@ class DataInterface:
         str_buffer.seek(0)
         str_buffer.name = name
 
+        if forward_fill_missing_values and not align_to_column:
+            print_warning(
+                "Forward-fill select without alignment to column. Please be aware that "
+                "if you choose a target column that has been forward-filled this will yield "
+                "scientifically inaccurate results"
+            )
+
+        options = {
+            "alignTo": align_to_column,
+            "missingDataStrategy": {
+                "ffill": {"enabled": forward_fill_missing_values},
+                "replaceMissing": {"enabled": replace_missing_values, "replaceWith": 1},
+            },
+        }
+
         request_data = dict(file=str_buffer, follow_redirects=True)
+        data = dict(options=json.dumps(options))
 
         response = self.client.post(
-            endpoint=Endpoints.UPLOAD_DATA,
-            files=request_data,
-            on_success_message=f"Data set '{name}' uploaded",
+            endpoint=Endpoints.UPLOAD_DATA, body=data, files=request_data, on_success_message=f"Data set '{name}' uploaded",
         )
 
         dataset_summary = DatasetSummary(**convert_dict_from_camel_to_snake(response))
@@ -61,10 +84,7 @@ class DataInterface:
         """
 
         datasets = self.client.get(Endpoints.ALL_DATASETS)
-        return [
-            DatasetSummary(**convert_dict_from_camel_to_snake(dataset))
-            for dataset in datasets
-        ]
+        return [DatasetSummary(**convert_dict_from_camel_to_snake(dataset)) for dataset in datasets]
 
     @catch_errors
     def delete_datasets(self, identifiers: List[int] = None):
@@ -73,7 +93,6 @@ class DataInterface:
         These may be retrieved by calling DataInterface.list_datasets.
 
         :param identifiers: list of numeric identifiers
-        :param names: list of name identifiers
         :return:
         """
 
@@ -123,22 +142,12 @@ class DataInterface:
         response = self.client.get(Endpoints.SINGLE_DATASET(identifier))
 
         individual_dataset_dictionary = response
-        column_data = [
-            ColumnPassport(**convert_dict_from_camel_to_snake(col))
-            for col in individual_dataset_dictionary["analysis"]
-        ]
+        column_data = [ColumnPassport(**convert_dict_from_camel_to_snake(col)) for col in individual_dataset_dictionary["analysis"]]
         dataset = IndividualDataset(
-            analysis=column_data,
-            summary=DatasetSummary(
-                **convert_dict_from_camel_to_snake(
-                    individual_dataset_dictionary["summary"]
-                ),
-            ),
+            analysis=column_data, summary=DatasetSummary(**convert_dict_from_camel_to_snake(individual_dataset_dictionary["summary"]),),
         )
 
-        dataset.summary.columns = [
-            RawColumn(name=col.name, id_=col.id_) for col in column_data
-        ]
+        dataset.summary.columns = [RawColumn(name=col.name, id_=col.id_) for col in column_data]
 
         return dataset
 
@@ -154,9 +163,7 @@ class DataInterface:
         :return:
         """
 
-        response = self.client.get(
-            Endpoints.SINGLE_SERIES(dataset_identifier, series_identifier)
-        )
+        response = self.client.get(Endpoints.SINGLE_SERIES(dataset_identifier, series_identifier))
 
         return convert_dict_from_camel_to_snake(response)
 
@@ -171,17 +178,11 @@ class DataInterface:
         """
 
         dataset_summary = self.get_dataset(dataset_identifier)
-        names = [
-            col.name for col in dataset_summary.analysis if col.id_ == series_identifier
-        ]
+        names = [col.name for col in dataset_summary.analysis if col.id_ == series_identifier]
         if len(names) == 0:
             raise ValueError("Invalid series identifier specified")
         series_name = names[0]
-        correlation_data = self.client.get(
-            Endpoints.SINGLE_SERIES_CORRELATIONS_WITH_OTHER_SERIES(
-                dataset_identifier, series_identifier
-            )
-        )
+        correlation_data = self.client.get(Endpoints.SINGLE_SERIES_CORRELATIONS_WITH_OTHER_SERIES(dataset_identifier, series_identifier))
         correlations = pd.DataFrame.from_dict(correlation_data["data"])
         correlations.columns = ["Series", "Pearson Correlation"]
         correlations.name = series_name
@@ -197,18 +198,12 @@ class DataInterface:
         :returndT:
         """
         dataset_summary = self.get_dataset(dataset_identifier)
-        names = [
-            col.name for col in dataset_summary.analysis if col.id_ == series_identifier
-        ]
+        names = [col.name for col in dataset_summary.analysis if col.id_ == series_identifier]
         if len(names) == 0:
             raise ValueError("Invalid series identifier specified")
 
         series_name = names[0]
-        acf = self.client.get(
-            Endpoints.SINGLE_SERIES_AUTOCORRELATION(
-                dataset_identifier, series_identifier
-            )
-        )
+        acf = self.client.get(Endpoints.SINGLE_SERIES_AUTOCORRELATION(dataset_identifier, series_identifier))
         acf_df = pd.DataFrame(acf["data"])
         acf_df.columns = ["Lag", f"Correlation: f{series_name}"]
         return acf_df
@@ -223,9 +218,7 @@ class DataInterface:
         """
 
         dataset = self.get_dataset(identifier=dataset_identifier)
-        df = pd.DataFrame.from_records(
-            [dataclasses.asdict(series) for series in dataset.analysis]
-        )[["id_", "name", "adf"]]
+        df = pd.DataFrame.from_records([dataclasses.asdict(series) for series in dataset.analysis])[["id_", "name", "adf"]]
         df["id_"] = df["id_"].astype(str)
         return df
 
@@ -244,12 +237,8 @@ class DataInterface:
             pbar.set_description(f"Correlation Matrix: Processing {names[index]}")
             name = [col.name for col in dataset_summary.analysis if col.id_ == id_][0]
             df = self.get_correlations(dataset_identifier, id_)
-            self_correlation = pd.DataFrame(
-                {"Series": name, "Pearson Correlation": 1}, index=[index]
-            )
-            single_slice = pd.concat(
-                [df.iloc[:index], self_correlation, df.iloc[index:]]
-            ).reset_index(drop=True)
+            self_correlation = pd.DataFrame({"Series": name, "Pearson Correlation": 1}, index=[index])
+            single_slice = pd.concat([df.iloc[:index], self_correlation, df.iloc[index:]]).reset_index(drop=True)
             matrix[index] = single_slice.iloc[:, 1].to_numpy()
 
         return pd.DataFrame(matrix, columns=names)
@@ -265,20 +254,49 @@ class DataInterface:
         :return:
         """
         dataset_summary = self.get_dataset(dataset_identifier)
-        names = [
-            col.name for col in dataset_summary.analysis if col.id_ == series_identifier
-        ]
+        names = [col.name for col in dataset_summary.analysis if col.id_ == series_identifier]
         if len(names) == 0:
             raise ValueError("Invalid series identifier specified")
         series_name = names[0]
         mutual_information_data = self.client.get(
-            Endpoints.SINGLE_SERIES_MUTUAL_INFORMATION_WITH_OTHER_SERIES(
-                dataset_identifier, series_identifier
-            )
+            Endpoints.SINGLE_SERIES_MUTUAL_INFORMATION_WITH_OTHER_SERIES(dataset_identifier, series_identifier)
         )
-        mutual_information_data = pd.DataFrame.from_dict(
-            mutual_information_data["data"]
-        )
+        mutual_information_data = pd.DataFrame.from_dict(mutual_information_data["data"])
         mutual_information_data.columns = ["Series", "Mutual Information"]
         mutual_information_data.name = series_name
         return mutual_information_data
+
+    @catch_errors
+    def upload_data_long_format_as_single_data_set(
+        self,
+        data: pd.DataFrame,
+        name: str,
+        cross_section_column_name: str,
+        date_column_name: str,
+        replace_missing_values: bool = True,
+        forward_fill_missing_values: bool = False,
+    ) -> IndividualDataset:
+        """
+        Uploads long format data into Horizon. The data frame should have a date column, with a numeric index.
+
+        :param data: The dataset in a pandas data frame. Must have a valid date column.
+        :param name: Name of the data set to be uploaded
+        :param cross_section_column_name: The identifier column that groups the records
+        :param date_column_name: The column name of the date index.
+        :param forward_fill_missing_values: Forward-fill missing values
+        :param replace_missing_values: Replace missing values
+        :return: A summary of the uploaded data set.
+        :param encode_categorical_data: Categorically encode data that is non-numeric
+        :param max_categories: Maximum number of categories per series.
+        """
+
+        df = data.pivot_table(columns=cross_section_column_name, index=date_column_name)
+        df.reset_index(inplace=True)
+        df.columns = ["/".join(column) for column in df.columns]
+
+        return self.upload_data(
+            data=df,
+            name=name,
+            forward_fill_missing_values=forward_fill_missing_values,
+            replace_missing_values=replace_missing_values,
+        )

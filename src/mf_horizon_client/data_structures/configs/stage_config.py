@@ -42,22 +42,13 @@ class FilterStageConfig(StageConfig):
         self.method = method
 
     def as_json(self) -> str:
-        return json.dumps(
-            {
-                "max_n_features": self.max_n_features,
-                "method": self.method.name,
-                "type": StageType.filtering.value,
-            }
-        )
+        return json.dumps({"max_n_features": self.max_n_features, "method": self.method.name, "type": StageType.filtering.value,})
 
     @classmethod
     def from_json(cls, json_config: str) -> "FilterStageConfig":
         config = json.loads(json_config)
 
-        return cls(
-            max_n_features=config["max_n_features"],
-            method=CorrelationMethod(config["method"]),
-        )
+        return cls(max_n_features=config["max_n_features"], method=CorrelationMethod(config["method"]),)
 
     @classmethod
     def get_default(cls) -> "FilterStageConfig":
@@ -75,12 +66,7 @@ class FilterStageConfig(StageConfig):
 
 class RefinementStageConfig(StageConfig):
     def __init__(
-        self,
-        min_features: int,
-        max_features: int,
-        early_stopping_sensitivity: float,
-        deep_search: bool,
-        regressor: RegressorType,
+        self, min_features: int, max_features: int, early_stopping_sensitivity: float, deep_search: bool, regressor: RegressorType,
     ):
         """
         :param min_features: - how far to reduce the feature set before stopping,
@@ -99,12 +85,8 @@ class RefinementStageConfig(StageConfig):
         self.deep_search = deep_search
         self.regressor = regressor
 
-        assert (
-            self.max_features >= self.min_features
-        ), "Max features must be < min in RFE"
-        assert (
-            0 <= self.early_stopping_sensitivity <= 1
-        ), "Early stopping sensitivity must be between 0 and 1 in RFE"
+        assert self.max_features >= self.min_features, "Max features must be < min in RFE"
+        assert 0 <= self.early_stopping_sensitivity <= 1, "Early stopping sensitivity must be between 0 and 1 in RFE"
         assert self.min_features >= 1, "Must retain at least one feature in RFE"
 
     def as_json(self) -> str:
@@ -133,11 +115,7 @@ class RefinementStageConfig(StageConfig):
     @classmethod
     def get_default(cls) -> "RefinementStageConfig":
         return RefinementStageConfig(
-            min_features=5,
-            max_features=20,
-            early_stopping_sensitivity=0,
-            deep_search=False,
-            regressor=RegressorType.RandomForest,
+            min_features=5, max_features=20, early_stopping_sensitivity=0, deep_search=False, regressor=RegressorType.RandomForest,
         )
 
     @property
@@ -162,7 +140,7 @@ class RefinementStageConfig(StageConfig):
             return False
         if self.early_stopping_sensitivity < 0:
             return False
-        if self.max_features > 50:
+        if self.max_features > 70:
             return False
         if self.max_features < self.min_features:
             return False
@@ -175,10 +153,7 @@ class RefinementStageConfig(StageConfig):
 
 class StationarisationStageConfig(StageConfig):
     def __init__(
-        self,
-        adf_threshold: float,
-        strategy: StationarisationStrategy,
-        target_transform: TargetTransformType,
+        self, adf_threshold: float, strategy: StationarisationStrategy, target_transform: TargetTransformType,
     ):
         self.adf_threshold = adf_threshold
         self.strategy = strategy
@@ -207,9 +182,7 @@ class StationarisationStageConfig(StageConfig):
     @classmethod
     def get_default(cls) -> "StationarisationStageConfig":
         return StationarisationStageConfig(
-            adf_threshold=0.03,
-            strategy=StationarisationStrategy.keep_fail,
-            target_transform=TargetTransformType.DoNothing,
+            adf_threshold=0.03, strategy=StationarisationStrategy.keep_fail, target_transform=TargetTransformType.DoNothing,
         )
 
     @property
@@ -225,34 +198,34 @@ class StationarisationStageConfig(StageConfig):
 class ProblemSpecificationConfig(StageConfig):
     def __init__(
         self,
-        target_feature: FeatureId,
+        target_features: List[FeatureId],
         horizons: List[int],
         data_split: float,
         active_columns: List[int],
+        scale_factor_multiplier=1,
     ):
-        self.target_feature = target_feature
+        self.target_features = target_features
         self.horizons = horizons
         self.data_split = data_split
         self.active_columns = active_columns
+        self.scale_factor_multiplier = scale_factor_multiplier
 
     def as_json(self) -> str:
         return json.dumps(
             {
-                "target_feature": str(self.target_feature),
+                "target_features": self.target_features,
                 "horizons": self.horizons,
                 "data_split": self.data_split,
                 "active_columns": self.active_columns,
                 "type": StageType.problem_specification.value,
+                "scale_factor_multiplier": self.scale_factor_multiplier,
             }
         )
 
     @classmethod
     def get_default(cls) -> "ProblemSpecificationConfig":
         return ProblemSpecificationConfig(
-            target_feature=FeatureId("unspecified"),
-            horizons=[1, 2, 3, 4, 5],
-            data_split=0.75,
-            active_columns=[],
+            target_features=[FeatureId("unspecified")], horizons=[1, 2, 3, 4, 5], data_split=0.75, active_columns=[],
         )
 
     @classmethod
@@ -274,9 +247,7 @@ class ProblemSpecificationConfig(StageConfig):
 
 
 class FeatureGenerationStageConfig(StageConfig):
-    def __init__(
-        self, max_n_features: int, feature_generators: List[FeatureGeneratorType]
-    ):
+    def __init__(self, max_n_features: int, feature_generators: List[FeatureGeneratorType]):
         self.max_n_features = max_n_features
         self.feature_generators = feature_generators
 
@@ -290,6 +261,8 @@ class FeatureGenerationStageConfig(StageConfig):
                 FeatureGeneratorType.lag,
                 FeatureGeneratorType.logarithm,
                 FeatureGeneratorType.rolling_average,
+                FeatureGeneratorType.num_peaks,
+                FeatureGeneratorType.one_hot_encode,
             ],
         )
 
@@ -305,9 +278,7 @@ class FeatureGenerationStageConfig(StageConfig):
     @classmethod
     def from_json(cls, json_config: str) -> "FeatureGenerationStageConfig":
         kwargs = json.loads(json_config)
-        kwargs["feature_generators"] = [
-            FeatureGeneratorType[name] for name in kwargs["feature_generators"]
-        ]
+        kwargs["feature_generators"] = [FeatureGeneratorType[name] for name in kwargs["feature_generators"]]
         return cls(**kwargs)
 
     @property
@@ -323,11 +294,7 @@ class FeatureGenerationStageConfig(StageConfig):
 
 class BacktestStageConfig(StageConfig):
     def __init__(
-        self,
-        n_backtests: int,
-        fold_train_frac: float,
-        gapping_factor: float,
-        regressor: RegressorType,
+        self, n_backtests: int, fold_train_frac: float, gapping_factor: float, regressor: RegressorType,
     ):
         self.n_backtests = n_backtests
         self.fold_train_frac = fold_train_frac
@@ -336,12 +303,7 @@ class BacktestStageConfig(StageConfig):
 
     @classmethod
     def get_default(cls) -> "BacktestStageConfig":
-        return BacktestStageConfig(
-            n_backtests=3,
-            fold_train_frac=0.4,
-            gapping_factor=0.0,
-            regressor=RegressorType.VBLinReg,
-        )
+        return BacktestStageConfig(n_backtests=3, fold_train_frac=0.4, gapping_factor=0.0, regressor=RegressorType.VBLinReg,)
 
     def as_json(self) -> str:
         return json.dumps(
@@ -389,9 +351,7 @@ class PredictionStageConfig(StageConfig):
         return PredictionStageConfig(regressor=RegressorType.VBLinReg)
 
     def as_json(self) -> str:
-        return json.dumps(
-            {"regressor": self.regressor.name, "type": StageType.prediction.value}
-        )
+        return json.dumps({"regressor": self.regressor.name, "type": StageType.prediction.value})
 
     @classmethod
     def from_json(cls, json_config: str) -> "PredictionStageConfig":

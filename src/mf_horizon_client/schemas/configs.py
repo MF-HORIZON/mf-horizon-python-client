@@ -3,7 +3,6 @@ from typing import Any, Dict, Type
 from marshmallow import fields, post_load
 from marshmallow_enum import EnumField
 from marshmallow_oneofschema import OneOfSchema
-
 from mf_horizon_client.data_structures.configs.stage_config import (
     BacktestStageConfig,
     FeatureGenerationStageConfig,
@@ -31,10 +30,7 @@ class FilteringConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self,
-        data: Any,
-        many: bool,  # pylint: disable=unused-argument
-        partial: bool,  # pylint: disable=unused-argument
+        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
     ) -> FilterStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -50,10 +46,7 @@ class StationarisationConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self,
-        data: Any,
-        many: bool,  # pylint: disable=unused-argument
-        partial: bool,  # pylint: disable=unused-argument
+        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
     ) -> StationarisationStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -63,17 +56,15 @@ class StationarisationConfigSchema(CamelCaseSchema):
 
 
 class ProblemSpecConfigSchema(CamelCaseSchema):
-    target_feature = fields.String(required=True)
+    target_features = fields.List(fields.String(required=False))
     horizons = fields.List(fields.Integer(required=True))
     data_split = fields.Float(required=True)
     active_columns = fields.List(fields.Integer(required=False))
+    scale_factor_multiplier = fields.Float(required=True)
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self,
-        data: Any,
-        many: bool,  # pylint: disable=unused-argument
-        partial: bool,  # pylint: disable=unused-argument
+        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
     ) -> ProblemSpecificationConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -90,10 +81,7 @@ class BacktestConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self,
-        data: Any,
-        many: bool,  # pylint: disable=unused-argument
-        partial: bool,  # pylint: disable=unused-argument
+        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
     ) -> BacktestStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -111,10 +99,7 @@ class RefinementConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self,
-        data: Any,
-        many: bool,  # pylint: disable=unused-argument
-        partial: bool,  # pylint: disable=unused-argument
+        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
     ) -> RefinementStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -129,10 +114,7 @@ class FeatureGenerationConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self,
-        data: Any,
-        many: bool,  # pylint: disable=unused-argument
-        partial: bool,  # pylint: disable=unused-argument
+        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
     ) -> FeatureGenerationStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -146,10 +128,7 @@ class PredictionConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self,
-        data: Any,
-        many: bool,  # pylint: disable=unused-argument
-        partial: bool,  # pylint: disable=unused-argument
+        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
     ) -> PredictionStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -187,10 +166,7 @@ class ConfigMultiplexSchema(OneOfSchema):  # type: ignore
         try:
             return self.config_lookup[type(obj)]
         except KeyError:
-            raise TypeError(
-                f"Unrecognised type {type(obj)} for multiplex schema, "
-                f"{self.__class__}"
-            )
+            raise TypeError(f"Unrecognised type {type(obj)} for multiplex schema, " f"{self.__class__}")
 
     def on_bind_field(self, field_name, field_obj):
         field_obj.data_key = force_camel_case(field_obj.data_key or field_name)

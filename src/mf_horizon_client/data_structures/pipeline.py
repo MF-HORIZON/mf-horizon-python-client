@@ -1,7 +1,6 @@
 from typing import List, Union
 
 from dataclasses import dataclass
-
 from mf_horizon_client.data_structures.configs.stage_status import StageStatus
 from mf_horizon_client.data_structures.configs.stage_types import StageType
 from mf_horizon_client.data_structures.dataset_summary import DatasetSummary
@@ -52,9 +51,7 @@ class Pipeline:
         """
         If a stage is running in the pipeline, return this stage
         """
-        stages = [
-            stage for stage in self.stages if stage.status == StageStatus.RUNNING.name
-        ]
+        stages = [stage for stage in self.stages if stage.status == StageStatus.RUNNING.name]
         if len(stages) == 1:
             return stages[0]
         return None
@@ -64,9 +61,7 @@ class Pipeline:
         """
         If stages are pending in the pipeline, return the first pending stage
         """
-        stages = [
-            stage for stage in self.stages if stage.status == StageStatus.PENDING.name
-        ]
+        stages = [stage for stage in self.stages if stage.status == StageStatus.PENDING.name]
         if len(stages) <= 0:
             return None
         return stages[0]
@@ -76,9 +71,7 @@ class Pipeline:
         """
         If stages are complete in the pipeline, return the last complete stage
         """
-        stages = [
-            stage for stage in self.stages if stage.status == StageStatus.COMPLETE.name
-        ]
+        stages = [stage for stage in self.stages if stage.status == StageStatus.COMPLETE.name]
         if len(stages) <= 0:
             return None
         return stages[-1]

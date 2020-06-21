@@ -2,7 +2,6 @@ import datetime
 from typing import Dict, List, Optional, Union
 
 from dataclasses import dataclass
-
 from mf_horizon_client.data_structures.raw_column import RawColumn
 
 

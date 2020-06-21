@@ -120,12 +120,51 @@ class BlueprintType(Enum):
 
     A. Forecast Specification
     B. Stationarization
+
+    Time-Series Regression
+    ===============================================================================================================
+    Run Horizon's regression algorithms on a pre-encoded signal set.
+
+    Small Data Forecasting
+    ===============================================================================================================
+    Time-series pipeline for small data. Does not contain any backtesting, and uses all the data for model training.
+
+    A. Forecast Specification
+    B. Stationarization
+    C. Linear Feature Generation
+    D. Feature Filtering
+    E. Feature Refinement
+    G. Linear Prediction
+
+    Variational Forecasting
+    ===============================================================================================================
+    Creates a stacked lag-embedding matrix by combining a two-stage feature generation and selection process, with
+    lag-only feature generation.
+
+    A. Forecast Specification
+    B. Stationarization
+    C. Linear Feature Generation
+    D. Feature Filtering
+    E. Linear Feature Generation
+    F. Feature Filtering
+    G. Linear Backtesting
+    H. Linear Prediction
+
+    Custom
+    ===============================================================================================================
+    Advanced: Contains only a forecast specification stage for adding stages manually.
+
+    N.B. There is no validation on stage addition.
     """
 
-    nonlinear = "NONLINEAR"
-    linear = "LINEAR"
-    fast_forecasting = "FAST_FORECAST"
-    feature_selection = "FEATURE_SELECTION"
-    feature_discovery = "FEATURE_DISCOVERY"
-    signal_encoding = "SIGNAL_ENCODING"
-    stationarisation = "STATIONARISATION"
+    nonlinear = "nonlinear"
+    linear = "linear"
+    fast_forecasting = "fast_forecast"
+    feature_selection = "feature_selection"
+    feature_discovery = "feature_discovery"
+    signal_encoding = "signal_encoding"
+    stationarisation = "stationarisation"
+    time_series_regression = "regression"
+    variational_forecasting = "variational_forecasting"
+    custom = "custom"
+    small_data = "small_data"

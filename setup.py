@@ -12,17 +12,10 @@ install_requires = [
     "marshmallow",
     "marshmallow-enum",
     "tqdm",
+    "scikit-learn",
     "marshmallow-oneofschema",
 ]
 
-docs_extras = [
-    "ipykernel",
-    "jupyter",
-    "matplotlib",
-    "pillow",
-    "sphinx",
-    "sphinx-gallery",
-]
 dev_extras = [
     "black",
     "check-manifest",
@@ -35,7 +28,7 @@ dev_extras = [
     "tox",
 ]
 
-extras_require = {"dev": dev_extras, "docs": docs_extras}
+extras_require = {"dev": dev_extras}
 
 
 # Add a `pip install .[all]` target:
@@ -45,6 +38,7 @@ for extras_list in extras_require.values():
 extras_require["all"] = list(all_extras)
 
 version = versioneer.get_version()
+
 
 project_repo_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -58,16 +52,19 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     description="Lightweight Python wrapper for Mind Foundry Horizon API",
     long_description=long_description,
+    download_url='https://github.com/MF-HORIZON/mf-horizon-python-client/archive/v2.3.0.tar.gz',
     # The project"s main homepage.
-    url="https://mindfoundry.ai",
+    url="https://www.mindfoundry.ai/horizon",
     # Author details
     author="Mind Foundry Ltd",
-    author_email="dev@mindfoundry.ai",
-    # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        # Finally, add an invalid classifier, as a failsafe against uploading to PyPI.
-        "Private :: Do Not Upload"
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'Topic :: Software Development :: Build Tools',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3.6',
     ],
+    author_email="stanley.speel@mindfoundry.ai",
     packages=find_namespace_packages(where="src"),
     package_dir={"": "src"},
     include_package_data=True,
