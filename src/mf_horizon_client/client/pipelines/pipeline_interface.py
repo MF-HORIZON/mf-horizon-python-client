@@ -6,6 +6,8 @@ from typing import Any, Dict, List, cast, Union
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+
+from mf_horizon_client.data_structures.predictions import PredictColumnQuery, Predictions
 from mf_horizon_client.post_processing.backtests import binary_backtests_returns, calculate_metrics, recommender
 from mf_horizon_client.data_structures.feature_id import FeatureId
 from mf_horizon_client.client.datasets.data_interface import DataInterface
@@ -13,7 +15,7 @@ from mf_horizon_client.client.pipelines.blueprints import BlueprintType
 from mf_horizon_client.client.pipelines.construct_pipeline_class import construct_pipeline_class
 from mf_horizon_client.data_structures.configs.stage_config import (
     ProblemSpecificationConfig,
-    StageConfig,
+    StageConfig, PredictionStageConfig,
 )
 from mf_horizon_client.data_structures.configs.stage_types import StageType
 from mf_horizon_client.data_structures.pipeline import Pipeline
@@ -39,7 +41,7 @@ class PipelineInterface:
         self.client = client
 
     @catch_errors
-    def create_pipeline(self, dataset_id: int, blueprint: BlueprintType, name: str, delete_after_creation=False,) -> Pipeline:
+    def create_pipeline(self, dataset_id: int, blueprint: BlueprintType, name: str, delete_after_creation=False, ) -> Pipeline:
         """
         Creates a pipeline, which is a set of stages coupled with a data set. Pipelines are the core
         component in Horizon, and are instantiated via reference to a 'blueprint' - the equivalent of a
@@ -57,7 +59,7 @@ class PipelineInterface:
         :param delete_after_creation: Deletes pipeline immediately after creation if set to true
         """
 
-        pipeline = self.client.put(Endpoints.PIPELINES, json={"name": name, "datasetId": dataset_id, "blueprint": blueprint.name},)
+        pipeline = self.client.put(Endpoints.PIPELINES, json={"name": name, "datasetId": dataset_id, "blueprint": blueprint.name}, )
         pipeline = self.get_single_pipeline(construct_pipeline_class(pipeline).summary.id_)
 
         if delete_after_creation:
@@ -167,7 +169,7 @@ class PipelineInterface:
             self.wait_for_pipeline_completion(pipeline_ids, verbose=False)
 
     @catch_errors
-    def run_pipeline(self, pipeline_id: int, synchronous: bool = False, verbose: bool = True,) -> Pipeline:
+    def run_pipeline(self, pipeline_id: int, synchronous: bool = False, verbose: bool = True, ) -> Pipeline:
         """
         Runs a single pipeline with the given ID.
 
@@ -199,7 +201,7 @@ class PipelineInterface:
         :return: Stage insights in dictionary form
         """
 
-        response = self.client.get(Endpoints.INSIGHTS_FOR_STAGE(pipeline_id=pipeline_id, stage_id=stage_id,))
+        response = self.client.get(Endpoints.INSIGHTS_FOR_STAGE(pipeline_id=pipeline_id, stage_id=stage_id, ))
 
         return convert_dict_from_camel_to_snake(response)
 
@@ -234,7 +236,7 @@ class PipelineInterface:
                 if feature["children"]:
                     get_children(feature["children"], current_horizon)
 
-        response = self.client.get(Endpoints.FEATURES_FOR_STAGE(pipeline_id=pipeline_id, stage_id=stage_id,))
+        response = self.client.get(Endpoints.FEATURES_FOR_STAGE(pipeline_id=pipeline_id, stage_id=stage_id, ))
         for horizon in response["horizons"]:
             features_for_horizon = response["horizons"][horizon]["features"]
             get_children(features_for_horizon, horizon)
@@ -316,7 +318,7 @@ class PipelineInterface:
 
     @catch_errors
     def run_expert_backtest_for_validation_data(
-        self, pipeline_id: int, stage_id: int, horizon: int, dataset_id: int, n_training_rows_for_backtest: int = 40, verbose=True
+            self, pipeline_id: int, stage_id: int, horizon: int, dataset_id: int, n_training_rows_for_backtest: int = 40, verbose=True
     ) -> pd.DataFrame:
         """
         EXPERT FUNCTIONALITY - Not exposed in the Horizon User Interface!
@@ -369,7 +371,8 @@ class PipelineInterface:
         )
 
     def run_expert_backtest_between_two_rows(
-        self, horizon: int, start_row: int, end_row: int, n_training_rows_for_backtest: int, pipeline_id: int, stage_id: int, verbose=True
+            self, horizon: int, start_row: int, end_row: int, n_training_rows_for_backtest: int, pipeline_id: int, stage_id: int,
+            verbose=True
     ):
         """
 
@@ -417,7 +420,7 @@ class PipelineInterface:
         if verbose:
             terminal_messages.print_success("Expert Backtest Complete")
 
-        df = pd.DataFrame.from_dict(convert_dict_from_camel_to_snake(response),)
+        df = pd.DataFrame.from_dict(convert_dict_from_camel_to_snake(response), )
         df.drop("neg_rmse", axis=1, inplace=True)
         df.set_index("timestamps", inplace=True)
         df.index = pd.to_datetime(df.index)
@@ -478,7 +481,7 @@ class PipelineInterface:
 
     ## EXPERIMENTAL FUNCTIONS BELOW THIS LINE.
 
-    def add_stage_to_pipeline(self, pipeline_id: int, parent_stage_id: int, stage_type: StageType,) -> Pipeline:
+    def add_stage_to_pipeline(self, pipeline_id: int, parent_stage_id: int, stage_type: StageType, ) -> Pipeline:
         """
         EXPERIMENTAL
 
@@ -492,15 +495,14 @@ class PipelineInterface:
 
         body = {"parentStage": parent_stage_id, "stageType": stage_type.name}
 
-        pipeline = construct_pipeline_class(self.client.put(Endpoints.STAGES(pipeline_id), json=body,))
+        pipeline = construct_pipeline_class(self.client.put(Endpoints.STAGES(pipeline_id), json=body, ))
 
         return self.get_single_pipeline(pipeline.summary.id_)
 
-    def _build_pipeline_from_template(self, target_column_name: str, pipeline_template: Pipeline):
+    def build_pipeline_from_template(self, target_column_name: str, pipeline_template: Pipeline):
         """
         Takes a pipeline template object and builds a duplicated pipeline copy of the template, with the
         target specified as the column_name.
-
         :param target_column_name: Name of the target column
         :param pipeline_template: Template pipeline
         :return:
@@ -540,14 +542,69 @@ class PipelineInterface:
             index += 1
         return pipeline
 
+    def fit_predict(self, pipeline_id: int, data: pd.DataFrame, horizon=-1):
+        """
+        Predicts with new data. Accepts a dataframe with column headers named identically to original data set used to train the pipeline
+
+        Date column must be a column in the dataframe
+
+        :param horizon: Horizon ahead to predict at. Must be a horizon that is selected in the forecast specification of the pipeline.
+        :param pipeline_id: unique pipeline identifier
+        :param data: dataframe for prediction
+        :return: Returns the predictions at the specified horizon
+        """
+
+        pipeline = self.get_single_pipeline(pipeline_id)
+        regressor_type = cast(PredictionStageConfig, pipeline.find_stage_by_type(StageType.prediction)[0].config).regressor
+
+        if horizon == -1:
+            horizon = cast(ProblemSpecificationConfig, pipeline.stages[0].config).horizons[0]
+
+        columns = []
+
+        for column in data.columns:
+            if data[column].dtype == float:
+                columns.append(
+                    PredictColumnQuery(
+                        name=column,
+                        data=data[column].tolist()).as_json()
+                )
+
+        json_data = {
+            "horizon": horizon,
+            "columns": columns,
+            "regressor": regressor_type.value,
+        }
+
+        response = self.client.get(
+            Endpoints.PREDICT_FOR_SINGLE_PIPELINE_AND_HORIZON(pipeline_id),
+            json=json_data,
+        )
+
+        predictions = []
+
+        for target_data in response:
+            predictions.append(
+                Predictions(
+                    mean=pd.Series(target_data["predictions"]["mean"]["data"]),
+                    cb_low=pd.Series(target_data["predictions"]["cbLow"]["data"]),
+                    cb_high=pd.Series(target_data["predictions"]["cbHigh"]["data"]),
+                    confidence=pd.Series(target_data["predictions"]["confidence"]),
+                    regressor_importances=target_data["predictions"]["regressorImportances"],
+                    name=target_data["targetOriginalColumnName"]
+                ).data
+            )
+
+        return pd.concat(predictions).T
+
     def run_multitarget_forecast(
-        self,
-        pipeline_template: Pipeline,
-        *,
-        column_names: List = -1,  # type: ignore
-        column_ids: List = -1,  # type: ignore
-        n_training_rows_for_one_point_backtest=None,
-        one_point_backtests=False,
+            self,
+            pipeline_template: Pipeline,
+            *,
+            column_names: List = -1,  # type: ignore
+            column_ids: List = -1,  # type: ignore
+            n_training_rows_for_one_point_backtest=None,
+            one_point_backtests=False,
     ) -> Dict[str, Any]:
         """
         DEPRECATED - NOW SUPPORTED NATIVELY IN THE PROBLEM SPEC CONFIG
@@ -577,7 +634,7 @@ class PipelineInterface:
 
         for column_name in column_names:
             pbar.update()
-            pipeline = self._build_pipeline_from_template(column_name, pipeline_template)
+            pipeline = self.build_pipeline_from_template(column_name, pipeline_template)
             pipeline = self.run_pipeline(pipeline_id=pipeline.summary.id_, synchronous=True, verbose=False)
             forecast = self.get_future_predictions_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.last_completed_stage.id_)
             forecast[column_name].index = pd.to_datetime(forecast[column_name].index)
@@ -596,7 +653,7 @@ class PipelineInterface:
         return {"backtests": all_backtests.dropna(), "forecasts": all_forecasts}
 
     def run_backtesting_for_multitarget(
-        self, n_training_rows_for_one_point_backtest, one_point_backtests, pipeline, problem_specification_config
+            self, n_training_rows_for_one_point_backtest, one_point_backtests, pipeline, problem_specification_config
     ):
         if one_point_backtests:
             backtest = self.run_expert_backtest_for_validation_data(
@@ -616,13 +673,13 @@ class PipelineInterface:
         return backtest
 
     def run_multitarget_forecast_with_target_specific_feature_set(
-        self,
-        pipeline_template: Pipeline,
-        *,
-        column_names: List = -1,  # type: ignore
-        column_ids: List = -1,  # type: ignore
-        n_training_rows_for_one_point_backtest=None,
-        one_point_backtests=False,
+            self,
+            pipeline_template: Pipeline,
+            *,
+            column_names: List = -1,  # type: ignore
+            column_ids: List = -1,  # type: ignore
+            n_training_rows_for_one_point_backtest=None,
+            one_point_backtests=False,
     ) -> Dict[str, pd.DataFrame]:
         """
 
@@ -645,7 +702,7 @@ class PipelineInterface:
         if column_names == -1:
             column_names = [column.name for column in pipeline_columns if str(column.id_) in column_ids]  # type: ignore
 
-        pipeline = self._build_pipeline_from_template(target_column_name=column_names[0], pipeline_template=pipeline_template)
+        pipeline = self.build_pipeline_from_template(target_column_name=column_names[0], pipeline_template=pipeline_template)
 
         for stage, template_stage in zip(pipeline.stages, pipeline_template.stages):
             self.update_config(pipeline_id=pipeline.summary.id_, stage_id=stage.id_, config=template_stage.config)
@@ -656,9 +713,9 @@ class PipelineInterface:
         pipeline = self.get_single_pipeline(pipeline_id=pipeline.summary.id_)
         terminal_messages.print_success("Successfully run feature generation. Exporting Data.")
 
-        features = self.download_feature_info_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.last_completed_stage.id_,)
+        features = self.download_feature_info_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.last_completed_stage.id_, )
 
-        original_data = self.download_feature_info_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.stages[0].id_,)
+        original_data = self.download_feature_info_for_stage(pipeline_id=pipeline.summary.id_, stage_id=pipeline.stages[0].id_, )
 
         augmented_features = pd.concat(features.values(), axis=1, sort=False)
         augmented_features = pd.concat([augmented_features, *original_data.values()], axis=1, sort=False)
@@ -678,9 +735,9 @@ class PipelineInterface:
             delete_after_creation=True,
         )
 
-        regression_template_problem_spec_config = cast(ProblemSpecificationConfig, template_pipeline_regression_only.stages[0].config,)
+        regression_template_problem_spec_config = cast(ProblemSpecificationConfig, template_pipeline_regression_only.stages[0].config, )
 
-        original_template_problem_spec_config = cast(ProblemSpecificationConfig, pipeline_template.stages[0].config,)
+        original_template_problem_spec_config = cast(ProblemSpecificationConfig, pipeline_template.stages[0].config, )
 
         regression_template_problem_spec_config.data_split = original_template_problem_spec_config.data_split
         regression_template_problem_spec_config.horizons = original_template_problem_spec_config.horizons
@@ -694,17 +751,17 @@ class PipelineInterface:
 
     @catch_errors
     def directional_response_regression(
-        self,
-        *,
-        data: pd.DataFrame,
-        target_column: str,
-        cross_section_column_name: str,
-        date_column_name: str,
-        discrete_value_dates: pd.Series = None,
-        train_up_to_row: int = None,
-        n_training_rows_for_one_point_backtest: Union[str, int] = "auto",
-        blueprint_type: BlueprintType = BlueprintType.nonlinear,
-        cleanup=True,
+            self,
+            *,
+            data: pd.DataFrame,
+            target_column: str,
+            cross_section_column_name: str,
+            date_column_name: str,
+            discrete_value_dates: pd.Series = None,
+            train_up_to_row: int = None,
+            n_training_rows_for_one_point_backtest: Union[str, int] = "auto",
+            blueprint_type: BlueprintType = BlueprintType.nonlinear,
+            cleanup=True,
     ):
         """
 
@@ -772,9 +829,9 @@ class PipelineInterface:
 
             backtest_errors[variable] = directions["predictions"] * directions["truths"]
 
-            classification_metrics = calculate_metrics(y_true=directions["truths"], y_pred=directions["predictions"],)
+            classification_metrics = calculate_metrics(y_true=directions["truths"], y_pred=directions["predictions"], )
             average_scores[variable] = pd.Series(
-                {"accuracy": classification_metrics["accuracy"], "f1_macro": classification_metrics["macro avg"]["f1-score"],}
+                {"accuracy": classification_metrics["accuracy"], "f1_macro": classification_metrics["macro avg"]["f1-score"], }
             )
             full_metrics[variable] = classification_metrics
 
@@ -782,7 +839,7 @@ class PipelineInterface:
             if discrete_value_dates is not None:
                 y_discrete = directions[directions.index.isin(discrete_value_dates[discrete_value_dates == variable].index)]
 
-                discrete_values_full_metrics[variable] = calculate_metrics(y_true=y_discrete["truths"], y_pred=y_discrete["predictions"],)
+                discrete_values_full_metrics[variable] = calculate_metrics(y_true=y_discrete["truths"], y_pred=y_discrete["predictions"], )
 
                 discrete_values_average_scores[variable] = pd.Series(
                     {
@@ -797,7 +854,7 @@ class PipelineInterface:
         )
         last_observed_values = last_observed_values[target_column]
 
-        recommendations = recommender(last_observed_values=last_observed_values, predictions=results["forecasts"],)
+        recommendations = recommender(last_observed_values=last_observed_values, predictions=results["forecasts"], )
 
         if cleanup:
             data_interface.delete_datasets([dataset.summary.id_])

@@ -2,13 +2,12 @@ from typing import cast
 
 import numpy as np
 import pandas as pd
+
+from examples.credentials import URL, API_KEY
 from mf_horizon_client.client.horizon_client import HorizonClient
 from mf_horizon_client.client.pipelines.blueprints import BlueprintType
 from mf_horizon_client.data_structures.configs.stage_config import ProblemSpecificationConfig
 from mf_horizon_client.data_structures.configs.stage_types import StageType
-
-URL = "https:// <<MY HORIZON URL >>"
-API_KEY = "<< MY API KEY >>"
 
 client = HorizonClient(server_url=URL, api_key=API_KEY, max_retries=1,)
 
