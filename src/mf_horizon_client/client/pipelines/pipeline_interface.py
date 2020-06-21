@@ -563,7 +563,7 @@ class PipelineInterface:
         columns = []
 
         for column in data.columns:
-            if data[column].dtype == float:
+            if (data[column].dtype == float) or (data[column].dtype == int):
                 columns.append(
                     PredictColumnQuery(
                         name=column,
