@@ -92,9 +92,15 @@ class Endpoints:
 
     @staticmethod
     def EXPERT_BACKTEST_FOR_STAGE_AND_HORIZON(
-        pipeline_id: int, horizon: int, first_row: int, last_row: int, n_training_rows: int, stage_id: int,
+            pipeline_id: int, horizon: int, first_row: int, last_row: int, n_training_rows: int, stage_id: int,
     ):
         return (
             f"{Endpoints.SINGLE_PIPELINE(pipeline_id)}/expert/backtest?first={first_row}"
             f"&last={last_row}&train={n_training_rows}&stage={stage_id}&horizon={horizon} "
         )
+
+    @staticmethod
+    def PREDICT_FOR_SINGLE_PIPELINE_AND_HORIZON(
+            pipeline_id: int,
+    ):
+        return f"{Endpoints.PIPELINES}/{pipeline_id}/expert/predict"

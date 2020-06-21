@@ -97,7 +97,7 @@ class HorizonSession:
 
         return HorizonResponse(self._session.put(url, data=body, json=json)).body
 
-    def get(self, endpoint: str, query_params: Dict = None, download: bool = False) -> Any:
+    def get(self, endpoint: str, query_params: Dict = None, download: bool = False, json=None) -> Any:
         """Make a GET request to Horizon
 
         Args:
@@ -117,10 +117,10 @@ class HorizonSession:
 
         if download:
             try:
-                return self._session.get(url).text
+                return self._session.get(url, json=json).text
             except Exception:  # pylint: disable=broad-except
                 pass
-        return HorizonResponse(self._session.get(url)).body
+        return HorizonResponse(self._session.get(url, json=json)).body
 
     def delete(self, endpoint: str) -> HorizonResponse:
         """Make a DELETE request to Horizon

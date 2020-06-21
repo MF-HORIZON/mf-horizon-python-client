@@ -28,6 +28,7 @@ class FeatureGeneratorType(Enum):
     num_peaks = "num_peaks"
     rolling_average = "rolling_average"
     perc_change = "perc_change"
+    one_hot_encode = "one_hot_encode"
 
 
 class RegressorType(Enum):

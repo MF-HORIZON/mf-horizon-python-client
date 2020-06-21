@@ -262,6 +262,7 @@ class FeatureGenerationStageConfig(StageConfig):
                 FeatureGeneratorType.logarithm,
                 FeatureGeneratorType.rolling_average,
                 FeatureGeneratorType.num_peaks,
+                FeatureGeneratorType.one_hot_encode,
             ],
         )
 

@@ -29,8 +29,6 @@ class DataInterface:
         name: str,
         forward_fill_missing_values: bool = False,
         replace_missing_values: bool = False,
-        encode_categorical_data: bool = False,
-        max_categories: int = 5,
         align_to_column: str = "",
     ) -> IndividualDataset:
         """
@@ -43,8 +41,6 @@ class DataInterface:
         :param name: Name of the data set to be uploaded
         :param forward_fill_missing_values: Forward-fill missing values
         :param replace_missing_values: Replace missing values
-        :param encode_categorical_data: Categorically encode data that is non-numeric
-        :param max_categories: Maximum number of categories per series.
         :return: A summary of the uploaded data set.
         """
 
@@ -65,7 +61,6 @@ class DataInterface:
                 "ffill": {"enabled": forward_fill_missing_values},
                 "replaceMissing": {"enabled": replace_missing_values, "replaceWith": 1},
             },
-            "nonNumericStrategy": {"encode": {"enabled": encode_categorical_data, "maxCategories": max_categories}},
         }
 
         request_data = dict(file=str_buffer, follow_redirects=True)
@@ -280,8 +275,6 @@ class DataInterface:
         date_column_name: str,
         replace_missing_values: bool = True,
         forward_fill_missing_values: bool = False,
-        encode_categorical_data=True,
-        max_categories=5,
     ) -> IndividualDataset:
         """
         Uploads long format data into Horizon. The data frame should have a date column, with a numeric index.
@@ -306,6 +299,4 @@ class DataInterface:
             name=name,
             forward_fill_missing_values=forward_fill_missing_values,
             replace_missing_values=replace_missing_values,
-            encode_categorical_data=encode_categorical_data,
-            max_categories=max_categories,
         )
