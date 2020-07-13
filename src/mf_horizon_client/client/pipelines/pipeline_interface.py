@@ -574,6 +574,7 @@ class PipelineInterface:
             "horizon": horizon,
             "columns": columns,
             "regressor": regressor_type.value,
+            "upload_options": {},
         }
 
         response = self.client.get(

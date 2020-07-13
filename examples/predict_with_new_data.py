@@ -26,7 +26,7 @@ test_data = df[200:]
 dataset = data_interface.upload_data(data=train_data, name="Train Data Predict Example")
 
 pipeline = pipeline_interface.create_pipeline(
-    dataset_id=dataset.summary.id_, blueprint=BlueprintType.nonlinear, name="ST"
+    dataset_id=dataset.summary.id_, blueprint=BlueprintType.fast_forecasting, name="ST"
 )
 
 cast(ProblemSpecificationConfig, pipeline.stages[0].config).horizons = [1]
