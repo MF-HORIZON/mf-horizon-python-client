@@ -14,6 +14,10 @@ class DatasetSummary:
     upload_date: datetime.datetime
     upload_user_id: int
     time_index: str
+    storage_specification: str
+    storage_size_bytes: int
+    source_file_bytes: int
+    indices_unique: bool
     description: str = "Description unspecified"
     columns: Union[List[RawColumn], None] = None
 

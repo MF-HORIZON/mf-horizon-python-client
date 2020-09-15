@@ -1,4 +1,5 @@
 import enum
+from typing import Optional
 
 from dataclasses import dataclass
 from mf_horizon_client.data_structures.configs.stage_config import StageConfig
@@ -32,4 +33,6 @@ class Stage:
     type: str  # One of StageType.values
     config: StageConfig
     run_mode: StageRunMode
+    position: int
     n_true_target_rows_for_plot: int = 500
+    error_msg: Optional[str] = None

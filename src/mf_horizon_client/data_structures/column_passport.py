@@ -18,6 +18,7 @@ class ColumnPassport:
     maximum: float
     n_rows: int
     is_text: bool
+    is_binary: bool
     adf: float
     quality: float
     intraday_available: bool
