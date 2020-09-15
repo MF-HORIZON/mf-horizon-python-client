@@ -1,3 +1,4 @@
+import io
 import json
 from io import StringIO
 from time import sleep
@@ -554,32 +555,31 @@ class PipelineInterface:
         :return: Returns the predictions at the specified horizon
         """
 
+        str_buffer = io.StringIO(data.to_csv(encoding="utf-8", index=False))
+        str_buffer.seek(0)
+        str_buffer.name = 'test_data'
+
         pipeline = self.get_single_pipeline(pipeline_id)
         regressor_type = cast(PredictionStageConfig, pipeline.find_stage_by_type(StageType.prediction)[0].config).regressor
 
         if horizon == -1:
             horizon = cast(ProblemSpecificationConfig, pipeline.stages[0].config).horizons[0]
 
-        columns = []
-
-        for column in data.columns:
-            if (data[column].dtype == float) or (data[column].dtype == int):
-                columns.append(
-                    PredictColumnQuery(
-                        name=column,
-                        data=data[column].tolist()).as_json()
-                )
-
-        json_data = {
-            "horizon": horizon,
-            "columns": columns,
-            "regressor": regressor_type.value,
-            "upload_options": {},
+        options = {
+            "alignTo": "",
+            "missingDataStrategy": {
+                "ffill": {"enabled": False},
+                "replaceMissing": {"enabled": False, "replaceWith": 1},
+            },
         }
 
-        response = self.client.get(
+        files = dict(file=str_buffer, follow_redirects=True)
+        body = dict(options=json.dumps(options), horizon=json.dumps(horizon), regressor=json.dumps(regressor_type.value))
+
+        response = self.client.post(
             Endpoints.PREDICT_FOR_SINGLE_PIPELINE_AND_HORIZON(pipeline_id),
-            json=json_data,
+            files=files,
+            body=body,
         )
 
         predictions = []
