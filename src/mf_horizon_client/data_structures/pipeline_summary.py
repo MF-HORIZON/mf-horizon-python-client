@@ -13,3 +13,4 @@ class PipelineSummary:
     creation_date: datetime.datetime
     creation_user: int
     dataset_name: str
+    locked: bool

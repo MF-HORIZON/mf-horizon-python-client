@@ -28,5 +28,5 @@ dask-worker-space/
 .pytest_cache/
 .tox/
 
-
-
+# Virtual env
+/.venv/

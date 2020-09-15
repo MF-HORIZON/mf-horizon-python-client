@@ -42,13 +42,22 @@ class FilterStageConfig(StageConfig):
         self.method = method
 
     def as_json(self) -> str:
-        return json.dumps({"max_n_features": self.max_n_features, "method": self.method.name, "type": StageType.filtering.value,})
+        return json.dumps(
+            {
+                "max_n_features": self.max_n_features,
+                "method": self.method.name,
+                "type": StageType.filtering.value,
+            }
+        )
 
     @classmethod
     def from_json(cls, json_config: str) -> "FilterStageConfig":
         config = json.loads(json_config)
 
-        return cls(max_n_features=config["max_n_features"], method=CorrelationMethod(config["method"]),)
+        return cls(
+            max_n_features=config["max_n_features"],
+            method=CorrelationMethod(config["method"]),
+        )
 
     @classmethod
     def get_default(cls) -> "FilterStageConfig":
@@ -66,7 +75,12 @@ class FilterStageConfig(StageConfig):
 
 class RefinementStageConfig(StageConfig):
     def __init__(
-        self, min_features: int, max_features: int, early_stopping_sensitivity: float, deep_search: bool, regressor: RegressorType,
+        self,
+        min_features: int,
+        max_features: int,
+        early_stopping_sensitivity: float,
+        deep_search: bool,
+        regressor: RegressorType,
     ):
         """
         :param min_features: - how far to reduce the feature set before stopping,
@@ -115,7 +129,11 @@ class RefinementStageConfig(StageConfig):
     @classmethod
     def get_default(cls) -> "RefinementStageConfig":
         return RefinementStageConfig(
-            min_features=5, max_features=20, early_stopping_sensitivity=0, deep_search=False, regressor=RegressorType.RandomForest,
+            min_features=5,
+            max_features=20,
+            early_stopping_sensitivity=0,
+            deep_search=False,
+            regressor=RegressorType.RandomForest,
         )
 
     @property
@@ -153,7 +171,10 @@ class RefinementStageConfig(StageConfig):
 
 class StationarisationStageConfig(StageConfig):
     def __init__(
-        self, adf_threshold: float, strategy: StationarisationStrategy, target_transform: TargetTransformType,
+        self,
+        adf_threshold: float,
+        strategy: StationarisationStrategy,
+        target_transform: TargetTransformType,
     ):
         self.adf_threshold = adf_threshold
         self.strategy = strategy
@@ -182,7 +203,9 @@ class StationarisationStageConfig(StageConfig):
     @classmethod
     def get_default(cls) -> "StationarisationStageConfig":
         return StationarisationStageConfig(
-            adf_threshold=0.03, strategy=StationarisationStrategy.keep_fail, target_transform=TargetTransformType.DoNothing,
+            adf_threshold=0.03,
+            strategy=StationarisationStrategy.keep_fail,
+            target_transform=TargetTransformType.DoNothing,
         )
 
     @property
@@ -225,7 +248,10 @@ class ProblemSpecificationConfig(StageConfig):
     @classmethod
     def get_default(cls) -> "ProblemSpecificationConfig":
         return ProblemSpecificationConfig(
-            target_features=[FeatureId("unspecified")], horizons=[1, 2, 3, 4, 5], data_split=0.75, active_columns=[],
+            target_features=[FeatureId("unspecified")],
+            horizons=[1, 2, 3, 4, 5],
+            data_split=0.75,
+            active_columns=[],
         )
 
     @classmethod
@@ -294,7 +320,11 @@ class FeatureGenerationStageConfig(StageConfig):
 
 class BacktestStageConfig(StageConfig):
     def __init__(
-        self, n_backtests: int, fold_train_frac: float, gapping_factor: float, regressor: RegressorType,
+        self,
+        n_backtests: int,
+        fold_train_frac: float,
+        gapping_factor: float,
+        regressor: RegressorType,
     ):
         self.n_backtests = n_backtests
         self.fold_train_frac = fold_train_frac
@@ -303,7 +333,12 @@ class BacktestStageConfig(StageConfig):
 
     @classmethod
     def get_default(cls) -> "BacktestStageConfig":
-        return BacktestStageConfig(n_backtests=3, fold_train_frac=0.4, gapping_factor=0.0, regressor=RegressorType.VBLinReg,)
+        return BacktestStageConfig(
+            n_backtests=3,
+            fold_train_frac=0.4,
+            gapping_factor=0.0,
+            regressor=RegressorType.VBLinReg,
+        )
 
     def as_json(self) -> str:
         return json.dumps(

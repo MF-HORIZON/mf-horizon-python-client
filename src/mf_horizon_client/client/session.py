@@ -32,12 +32,12 @@ class HorizonSession:
 
     Args:
         server_url (str): URL of your Horizon server
-        auth0_bearer_token (str): Your personal API key
+        api_key (str): Your personal API key
         max_retries (int, default 3): How many times to retry a request if a connection error occurs.
     """
 
-    def __init__(self, server_url: str, auth0_bearer_token: str, max_retries: int = 3):
-        headers = {"authorization": f"Bearer {auth0_bearer_token}"}
+    def __init__(self, server_url: str, api_key: str, max_retries: int = 3):
+        headers = {"X-ApiKey": api_key}
         self._session: Session = self._make_session(server_url, max_retries, headers)
         self._root_url = server_url
 
@@ -45,7 +45,11 @@ class HorizonSession:
     def _make_session(server_url: str, max_retries: int, headers) -> Session:
         session = Session()
         retry = Retry(
-            total=max_retries, connect=max_retries, backoff_factor=0.5, method_whitelist=False, status_forcelist=RETRY_STATUS_CODES,
+            total=max_retries,
+            connect=max_retries,
+            backoff_factor=0.5,
+            method_whitelist=False,
+            status_forcelist=RETRY_STATUS_CODES,
         )
 
         adapter = HTTPAdapter(max_retries=retry)
@@ -54,7 +58,13 @@ class HorizonSession:
         return session
 
     @catch_errors
-    def post(self, endpoint: str, body: dict = None, files: Dict = None, on_success_message: str = None,) -> HorizonResponse:
+    def post(
+        self,
+        endpoint: str,
+        body: dict = None,
+        files: Dict = None,
+        on_success_message: str = None,
+    ) -> HorizonResponse:
         """Make a POST request to Horizon with a JSON body.
 
         Args:
@@ -70,7 +80,11 @@ class HorizonSession:
             :class:`.HorizonError` if an error response is received.
         """
 
-        response = self._session.post(urljoin(base=self._root_url, url=endpoint), data=body, files=files,)
+        response = self._session.post(
+            urljoin(base=self._root_url, url=endpoint),
+            data=body,
+            files=files,
+        )
 
         if on_success_message and response.ok:
             print_success(on_success_message)
@@ -134,7 +148,9 @@ class HorizonSession:
         Raises:
             :class:`.HorizonError` if an error response is received.
         """
-        return HorizonResponse(self._session.delete(urljoin(base=self._root_url, url=endpoint)),)
+        return HorizonResponse(
+            self._session.delete(urljoin(base=self._root_url, url=endpoint)),
+        )
 
     def disconnect(self):
         self._session.close()

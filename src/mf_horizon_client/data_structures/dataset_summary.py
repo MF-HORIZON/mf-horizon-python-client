@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from mf_horizon_client.data_structures.raw_column import RawColumn
 
 
-@dataclass
+@dataclass  # pylint: disable=too-many-instance-attributes
 class DatasetSummary:
     name: str
     id_: int
@@ -14,6 +14,10 @@ class DatasetSummary:
     upload_date: datetime.datetime
     upload_user_id: int
     time_index: str
+    storage_specification: str
+    storage_size_bytes: int
+    source_file_bytes: int
+    indices_unique: bool
     description: str = "Description unspecified"
     columns: Union[List[RawColumn], None] = None
 

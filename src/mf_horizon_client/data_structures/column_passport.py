@@ -1,7 +1,7 @@
 from typing import Any
 
-import pandas as pd
 from dataclasses import dataclass
+import pandas as pd
 
 
 @dataclass
@@ -18,6 +18,7 @@ class ColumnPassport:
     maximum: float
     n_rows: int
     is_text: bool
+    is_binary: bool
     adf: float
     quality: float
     intraday_available: bool
