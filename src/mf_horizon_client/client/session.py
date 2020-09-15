@@ -32,12 +32,12 @@ class HorizonSession:
 
     Args:
         server_url (str): URL of your Horizon server
-        auth0_bearer_token (str): Your personal API key
+        api_key (str): Your personal API key
         max_retries (int, default 3): How many times to retry a request if a connection error occurs.
     """
 
-    def __init__(self, server_url: str, auth0_bearer_token: str, max_retries: int = 3):
-        headers = {"authorization": f"Bearer {auth0_bearer_token}"}
+    def __init__(self, server_url: str, api_key: str, max_retries: int = 3):
+        headers = {"X-ApiKey": api_key}
         self._session: Session = self._make_session(server_url, max_retries, headers)
         self._root_url = server_url
 
