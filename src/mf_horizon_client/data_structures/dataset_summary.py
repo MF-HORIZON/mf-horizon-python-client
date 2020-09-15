@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from mf_horizon_client.data_structures.raw_column import RawColumn
 
 
-@dataclass
+@dataclass  # pylint: disable=too-many-instance-attributes
 class DatasetSummary:
     name: str
     id_: int

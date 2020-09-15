@@ -30,7 +30,10 @@ class FilteringConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
+        self,
+        data: Any,
+        many: bool,  # pylint: disable=unused-argument
+        partial: bool,  # pylint: disable=unused-argument
     ) -> FilterStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -46,7 +49,10 @@ class StationarisationConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
+        self,
+        data: Any,
+        many: bool,  # pylint: disable=unused-argument
+        partial: bool,  # pylint: disable=unused-argument
     ) -> StationarisationStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -64,7 +70,10 @@ class ProblemSpecConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
+        self,
+        data: Any,
+        many: bool,  # pylint: disable=unused-argument
+        partial: bool,  # pylint: disable=unused-argument
     ) -> ProblemSpecificationConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -81,7 +90,10 @@ class BacktestConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
+        self,
+        data: Any,
+        many: bool,  # pylint: disable=unused-argument
+        partial: bool,  # pylint: disable=unused-argument
     ) -> BacktestStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -99,7 +111,10 @@ class RefinementConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
+        self,
+        data: Any,
+        many: bool,  # pylint: disable=unused-argument
+        partial: bool,  # pylint: disable=unused-argument
     ) -> RefinementStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -114,7 +129,10 @@ class FeatureGenerationConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
+        self,
+        data: Any,
+        many: bool,  # pylint: disable=unused-argument
+        partial: bool,  # pylint: disable=unused-argument
     ) -> FeatureGenerationStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts
@@ -128,7 +146,10 @@ class PredictionConfigSchema(CamelCaseSchema):
 
     @post_load  # type: ignore
     def make(  # pylint: disable=no-self-use
-        self, data: Any, many: bool, partial: bool,  # pylint: disable=unused-argument  # pylint: disable=unused-argument
+        self,
+        data: Any,
+        many: bool,  # pylint: disable=unused-argument
+        partial: bool,  # pylint: disable=unused-argument
     ) -> PredictionStageConfig:
         """
         Marshmallow function, invoked after validating and loading json data. Converts

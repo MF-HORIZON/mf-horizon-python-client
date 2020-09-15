@@ -3,7 +3,9 @@ import numpy as np
 from sklearn.metrics import classification_report
 
 
-def binary_backtests_returns(backtests: pd.DataFrame,) -> pd.DataFrame:
+def binary_backtests_returns(
+    backtests: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Converts a Horizon backtest data frame into a binary backtests of directions
     """
@@ -14,7 +16,11 @@ def calculate_metrics(y_pred: pd.Series, y_true: pd.Series):
     """
     Takes a Horizon binary backtest data frame and calculate metrics.
     """
-    return classification_report(y_true=y_true, y_pred=y_pred, output_dict=True,)
+    return classification_report(
+        y_true=y_true,
+        y_pred=y_pred,
+        output_dict=True,
+    )
 
 
 def recommender(last_observed_values: pd.Series, predictions: pd.DataFrame) -> pd.DataFrame:

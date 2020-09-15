@@ -1,7 +1,7 @@
 from typing import Any
 
-import pandas as pd
 from dataclasses import dataclass
+import pandas as pd
 
 
 @dataclass

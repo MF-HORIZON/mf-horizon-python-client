@@ -9,7 +9,11 @@ from mf_horizon_client.client.pipelines.blueprints import BlueprintType
 from mf_horizon_client.data_structures.configs.stage_config import ProblemSpecificationConfig
 from mf_horizon_client.data_structures.configs.stage_types import StageType
 
-client = HorizonClient(server_url=URL, api_key=API_KEY, max_retries=1,)
+client = HorizonClient(
+    server_url=URL,
+    api_key=API_KEY,
+    max_retries=1,
+)
 
 data_interface = client.data_interface()
 pipeline_interface = client.pipeline_interface()
@@ -43,5 +47,7 @@ template_pipeline.stages[0].config = problem_spec_config
 ## Loop through each target (slower)
 
 results = pipeline_interface.run_multitarget_forecast(
-    pipeline_template=template_pipeline, column_ids=[str(id_) for id_ in dataset.summary.column_ids], one_point_backtests=True,
+    pipeline_template=template_pipeline,
+    column_ids=[str(id_) for id_ in dataset.summary.column_ids],
+    one_point_backtests=True,
 )

@@ -67,7 +67,10 @@ class DataInterface:
         data = dict(options=json.dumps(options))
 
         response = self.client.post(
-            endpoint=Endpoints.UPLOAD_DATA, body=data, files=request_data, on_success_message=f"Data set '{name}' uploaded",
+            endpoint=Endpoints.UPLOAD_DATA,
+            body=data,
+            files=request_data,
+            on_success_message=f"Data set '{name}' uploaded",
         )
 
         dataset_summary = DatasetSummary(**convert_dict_from_camel_to_snake(response))
@@ -144,7 +147,10 @@ class DataInterface:
         individual_dataset_dictionary = response
         column_data = [ColumnPassport(**convert_dict_from_camel_to_snake(col)) for col in individual_dataset_dictionary["analysis"]]
         dataset = IndividualDataset(
-            analysis=column_data, summary=DatasetSummary(**convert_dict_from_camel_to_snake(individual_dataset_dictionary["summary"]),),
+            analysis=column_data,
+            summary=DatasetSummary(
+                **convert_dict_from_camel_to_snake(individual_dataset_dictionary["summary"]),
+            ),
         )
 
         dataset.summary.columns = [RawColumn(name=col.name, id_=col.id_) for col in column_data]

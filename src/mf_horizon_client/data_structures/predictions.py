@@ -1,7 +1,6 @@
+from dataclasses import dataclass
 from typing import List, Dict
 import pandas as pd
-
-from dataclasses import dataclass
 
 
 @dataclass
@@ -10,10 +9,7 @@ class PredictColumnQuery:
     data: List[float]
 
     def as_json(self):
-        return {
-            "name": self.name,
-            "data": self.data
-        }
+        return {"name": self.name, "data": self.data}
 
 
 @dataclass
@@ -29,11 +25,13 @@ class Predictions:
 
     @property
     def data(self) -> pd.DataFrame:
-        df = pd.DataFrame({
-            "mean": self.mean.values,
-            "cb_low": self.cb_low.values,
-            "cb_high": self.cb_high.values,
-        })
+        df = pd.DataFrame(
+            {
+                "mean": self.mean.values,
+                "cb_low": self.cb_low.values,
+                "cb_high": self.cb_high.values,
+            }
+        )
 
         df.index = [self.name]
         return df
