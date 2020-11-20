@@ -1,5 +1,6 @@
 import io
 import json
+from time import sleep
 from typing import List
 
 import dataclasses
@@ -9,6 +10,7 @@ from tqdm import tqdm
 from mf_horizon_client.data_structures.column_passport import ColumnPassport
 from mf_horizon_client.data_structures.dataset_summary import DatasetSummary
 from mf_horizon_client.data_structures.individual_dataset import IndividualDataset
+from mf_horizon_client.data_structures.ingestion_process import IngestionProcess
 from mf_horizon_client.data_structures.raw_column import RawColumn
 from mf_horizon_client.endpoints import Endpoints
 from mf_horizon_client.utils.catch_method_exception import catch_errors
@@ -70,13 +72,21 @@ class DataInterface:
             endpoint=Endpoints.UPLOAD_DATA,
             body=data,
             files=request_data,
-            on_success_message=f"Data set '{name}' uploaded",
+            on_success_message=f"Data set '{name}' uploaded. Analyzing...",
         )
+        ingestion_process = IngestionProcess(**convert_dict_from_camel_to_snake(response))
 
-        dataset_summary = DatasetSummary(**convert_dict_from_camel_to_snake(response))
-        dataset = self.get_dataset(dataset_summary.id_)
+        while ingestion_process.status not in ["completed", "error"]:
+            sleep(0.5)
+            response = self.client.get(
+                endpoint=Endpoints.SINGLE_INGESTION_PROCESS(ingestion_process.id_),
+            )
+            ingestion_process = IngestionProcess(**convert_dict_from_camel_to_snake(response))
 
-        return dataset
+        if ingestion_process.status == "error":
+            raise ValueError(f"Error analyzing data\n{ingestion_process.error}")
+
+        return self.get_dataset(ingestion_process.dataset_id)
 
     @catch_errors
     def list_datasets(self) -> List[DatasetSummary]:
