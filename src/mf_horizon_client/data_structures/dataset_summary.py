@@ -17,7 +17,10 @@ class DatasetSummary:
     storage_specification: str
     storage_size_bytes: int
     source_file_bytes: int
+    first_index_timestamp: Optional[int]
+    last_index_timestamp: Optional[int]
     indices_unique: bool
+    cadence: Optional[int]
     description: str = "Description unspecified"
     columns: Union[List[RawColumn], None] = None
 

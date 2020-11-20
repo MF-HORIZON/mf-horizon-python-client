@@ -25,14 +25,19 @@ class Endpoints:
     """
 
     HEALTH = create_full_static_endpoint("healthz/")
-    STATUS = create_full_static_endpoint("admin/workers/status")
+    STATUS = create_full_static_endpoint("users/me/taskStatus")
     UPLOAD_DATA = create_full_static_endpoint("datasets/upload")
     ALL_DATASETS = create_full_static_endpoint("datasets/")
+    INGESTION_PROCESSES = create_full_static_endpoint("ingestionProcesses/")
     PIPELINES = create_full_static_endpoint("pipelines/")
 
     @staticmethod
     def SINGLE_DATASET(dataset_id: int):
         return f"{Endpoints.ALL_DATASETS}{dataset_id}"
+
+    @staticmethod
+    def SINGLE_INGESTION_PROCESS(ingestion_process_id: int):
+        return f"{Endpoints.INGESTION_PROCESSES}{ingestion_process_id}"
 
     @staticmethod
     def SINGLE_SERIES(dataset_id: int, series_id: int):

@@ -33,6 +33,5 @@ class Stage:
     type: str  # One of StageType.values
     config: StageConfig
     run_mode: StageRunMode
-    position: int
     n_true_target_rows_for_plot: int = 500
     error_msg: Optional[str] = None

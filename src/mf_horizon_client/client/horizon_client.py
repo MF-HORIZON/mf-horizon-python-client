@@ -55,8 +55,7 @@ class HorizonClient(HorizonSession):
 
     def horizon_compute_status(self) -> dict:
         """
-        Checks to see how many pipeline runners are not being used
-        :return: WorkerStatusSchema
+        Checks to see how many tasks are currently running
         """
         return self.get(ENDPOINTS.STATUS)
 

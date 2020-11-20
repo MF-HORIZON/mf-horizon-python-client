@@ -18,8 +18,7 @@ def update_single_pipeline_status(pipelines: List[Pipeline], progress_bars: List
         if running_stage:
             progress_bar.set_postfix(
                 {
-                    "n_scheduled_tasks": compute_status["num_unfinished_run_tasks_for_user"],
-                    "compute_worker_status": f"{compute_status['num_busy_workers']} out of {compute_status['num_workers']} cores in use",
+                    "n_scheduled_tasks": compute_status["num_unfinished_run_tasks"],
                     "currently_processing": f"{running_stage.type.upper()} ({running_stage.id_})",
                 }
             )
