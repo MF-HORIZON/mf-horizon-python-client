@@ -85,7 +85,7 @@ class Endpoints:
 
     @staticmethod
     def FEATURES_FOR_STAGE(pipeline_id: int, stage_id: int):
-        return f"{Endpoints.SINGLE_STAGE(pipeline_id, stage_id)}/features"
+        return f"{Endpoints.SINGLE_STAGE(pipeline_id, stage_id)}/features/graph"
 
     @staticmethod
     def FEATURE_DATA_FOR_STAGE(pipeline_id: int, stage_id: int, horizon: int):
