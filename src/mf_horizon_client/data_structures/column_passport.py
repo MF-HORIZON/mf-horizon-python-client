@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 from dataclasses import dataclass
 import pandas as pd
@@ -22,6 +22,7 @@ class ColumnPassport:
     adf: float
     quality: float
     intraday_available: bool
+    binary_labels: List[str]
 
     def __post_init__(self) -> None:
         self.name = str(self.name)

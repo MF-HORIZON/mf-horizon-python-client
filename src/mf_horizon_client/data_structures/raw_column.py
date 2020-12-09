@@ -7,6 +7,8 @@ class RawColumn:
 
     id_: int
     name: str
+    is_text: bool
+    is_binary: bool
 
     def __post_init__(self) -> None:
         assert isinstance(self.id_, int)
