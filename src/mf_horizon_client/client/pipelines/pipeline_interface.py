@@ -235,39 +235,13 @@ class PipelineInterface:
         :param stage_id: ID of a stage
         :return: Dataframe containing the feature metadata (with each row being a feature)
         """
-        features = []
-
-        def get_children(feature_list: List[Any], current_horizon: str) -> None:
-            """
-            Depth-first search of feature tree; appending the leaf features into the feature list supplied.
-            :param feature_list: List to be modified by this function
-            :param current_horizon: current forecast horizon being searched
-            :return: None (Function has side effect of modifying feature_list)
-            """
-            for feature in feature_list:
-                if feature["active"]:
-                    features.append(
-                        {
-                            "feature_name": feature["name"],
-                            "feature_type": feature["type"],
-                            "active": feature["active"],
-                            "json_config": json.dumps(feature["config"]),
-                            "horizon": current_horizon,
-                        }
-                    )
-                if feature["children"]:
-                    get_children(feature["children"], current_horizon)
-
         response = self.client.get(
             Endpoints.FEATURES_FOR_STAGE(
                 pipeline_id=pipeline_id,
                 stage_id=stage_id,
             )
         )
-        for horizon in response["horizons"]:
-            features_for_horizon = response["horizons"][horizon]["features"]
-            get_children(features_for_horizon, horizon)
-        df = pd.DataFrame.from_records(features)
+        df = pd.DataFrame.from_records(response["nodesAndLinks"])
         df["active"].astype(bool)
         return df
 
