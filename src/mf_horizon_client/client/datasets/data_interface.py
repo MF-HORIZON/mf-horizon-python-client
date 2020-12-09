@@ -163,7 +163,9 @@ class DataInterface:
             ),
         )
 
-        dataset.summary.columns = [RawColumn(name=col.name, id_=col.id_) for col in column_data]
+        dataset.summary.columns = [
+            RawColumn(name=col.name, id_=col.id_, is_text=col.is_text, is_binary=col.is_binary) for col in column_data
+        ]
 
         return dataset
 
