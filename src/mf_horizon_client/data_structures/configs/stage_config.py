@@ -218,6 +218,44 @@ class StationarisationStageConfig(StageConfig):
         return True
 
 
+class ClassificationSpecConfig(StageConfig):
+    def __init__(
+        self,
+        target_id: FeatureId,
+        last_train_timestamp_millisec: int,
+        active_columns: List[int],
+        label_to_predict: str
+    ):
+        self.target_id = target_id
+        self.last_train_timestamp_millisec = last_train_timestamp_millisec
+        self.active_colunms = active_columns
+        self.label_to_predict = label_to_predict
+
+    def as_json(self) -> str:
+        return json.dumps({
+            "target_id": self.target_id,
+            "last_train_timestamp_millisec": self.last_train_timestamp_millisec,
+            "active_columns": self.active_colunms,
+            "type": StageType.classification_specification.value
+        })
+
+    @classmethod
+    def get_default(cls) -> "ClassificationSpecConfig":
+        return ClassificationSpecConfig(
+            target_id=FeatureId("unspecified"),
+            last_train_timestamp_millisec=-1,
+            active_columns=[],
+            label_to_predict="unspecified"
+        )
+
+    @classmethod
+    def from_json(cls, json_config: str) -> "ClassificationSpecConfig":
+        return cls(**json.loads(json_config))
+
+    def valid_configuration_values(self):
+        return True
+
+
 class ProblemSpecificationConfig(StageConfig):
     def __init__(
         self,
@@ -315,6 +353,48 @@ class FeatureGenerationStageConfig(StageConfig):
             return False
         if self.max_n_features < 50:
             return False
+        return True
+
+
+class ClassificationDiscoveryStageConfig(StageConfig):
+    def __init__(
+        self,
+        feature_generation_enabled: bool,
+        timeout_seconds: int,
+        columns_not_to_generate_features_from: List[str],
+        max_n_features: int,
+    ):
+        self.feature_generation_enabled = feature_generation_enabled
+        self.timeout_seconds = timeout_seconds,
+        self.columns_not_to_generate_features_from = columns_not_to_generate_features_from,
+        self.max_n_features = max_n_features
+
+    @classmethod
+    def get_default(cls) -> "ClassificationDiscoveryStageConfig":
+        return ClassificationDiscoveryStageConfig(
+            feature_generation_enabled=True,
+            timeout_seconds=60,
+            columns_not_to_generate_features_from=[],
+            max_n_features=100,
+        )
+
+    def as_json(self) -> str:
+        return json.dumps(
+            {
+                "feature_generation_enabled": self.feature_generation_enabled,
+                "timeout_seconds": self.timeout_seconds,
+                "columns_not_to_generate_features_from": self.columns_not_to_generate_features_from,
+                "max_n_features": self.max_n_features,
+            }
+        )
+
+    @classmethod
+    def from_json(cls, json_config: str) -> "ClassificationDiscoveryStageConfig":
+        return cls(**json.loads(json_config))
+
+    @property
+    def valid_configuration_values(self):
+        """Checks if values are permitted"""
         return True
 
 

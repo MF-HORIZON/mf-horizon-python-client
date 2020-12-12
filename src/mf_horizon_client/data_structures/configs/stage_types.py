@@ -11,3 +11,4 @@ class StageType(enum.Enum):
     backtest = "backtest"
     refinement = "refinement"
     prediction = "prediction"
+    classification_specification = "classification_specification"

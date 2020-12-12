@@ -114,3 +114,9 @@ class Endpoints:
         pipeline_id: int,
     ):
         return f"{Endpoints.PIPELINES}/{pipeline_id}/expert/predict"
+
+    @staticmethod
+    def PREDICT_CLASSIFY(
+        pipeline_id: int,
+    ):
+        return f"{Endpoints.PIPELINES}/{pipeline_id}/expert/classification/predict"

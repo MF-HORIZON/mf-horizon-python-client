@@ -150,6 +150,10 @@ class BlueprintType(Enum):
     G. Linear Backtesting
     H. Linear Prediction
 
+    Classification
+    ===============================================================================================================
+    Creates a *time-aware classification* pipeline.
+
     Custom
     ===============================================================================================================
     Advanced: Contains only a forecast specification stage for adding stages manually.
@@ -168,3 +172,4 @@ class BlueprintType(Enum):
     variational_forecasting = "variational_forecasting"
     custom = "custom"
     small_data = "small_data"
+    classification = "classification"

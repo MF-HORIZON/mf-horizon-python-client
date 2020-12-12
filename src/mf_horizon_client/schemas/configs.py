@@ -10,7 +10,7 @@ from mf_horizon_client.data_structures.configs.stage_config import (
     PredictionStageConfig,
     ProblemSpecificationConfig,
     RefinementStageConfig,
-    StationarisationStageConfig,
+    StationarisationStageConfig, ClassificationSpecConfig, ClassificationDiscoveryStageConfig,
 )
 from mf_horizon_client.data_structures.configs.stage_config_enums import (
     CorrelationMethod,
@@ -80,6 +80,46 @@ class ProblemSpecConfigSchema(CamelCaseSchema):
         dictionary loaded from json into a problem specification stage config object.
         """
         return ProblemSpecificationConfig(**data)
+
+
+class ClassificationSpecConfigSchema(CamelCaseSchema):
+    target_id = fields.String(required=True)
+    label_to_predict = fields.String(required=True)
+    last_train_timestamp_millisec = fields.Integer(required=True)
+    active_columns = fields.List(fields.Integer(required=False))
+
+    @post_load  # type: ignore
+    def make(  # pylint: disable=no-self-use
+        self,
+        data: Any,
+        many: bool,  # pylint: disable=unused-argument
+        partial: bool,  # pylint: disable=unused-argument
+    ) -> ClassificationSpecConfig:
+        """
+        Marshmallow function, invoked after validating and loading json data. Converts
+        dictionary loaded from json into a problem specification stage config object.
+        """
+        return ClassificationSpecConfig(**data)
+
+
+class ClassificationDiscoveryConfigSchema(CamelCaseSchema):
+    feature_generation_enabled: fields.Boolean(required=True)
+    timeout_seconds = fields.Float(required=True)
+    columns_not_to_generate_features_from = fields.List(fields.Integer(required=False))
+    max_n_features = fields.Integer(required=True)
+
+    @post_load  # type: ignore
+    def make(  # pylint: disable=no-self-use
+        self,
+        data: Any,
+        many: bool,  # pylint: disable=unused-argument
+        partial: bool,  # pylint: disable=unused-argument
+    ) -> ClassificationDiscoveryStageConfig:
+        """
+        Marshmallow function, invoked after validating and loading json data. Converts
+        dictionary loaded from json into a discovery stage config object.
+        """
+        return ClassificationDiscoveryStageConfig(**data)
 
 
 class BacktestConfigSchema(CamelCaseSchema):
@@ -171,6 +211,9 @@ class ConfigMultiplexSchema(OneOfSchema):  # type: ignore
         StageType.backtest.name: BacktestConfigSchema,
         StageType.refinement.name: RefinementConfigSchema,
         StageType.prediction.name: PredictionConfigSchema,
+        StageType.classification_specification.name: ClassificationSpecConfigSchema,
+        StageType.classification_feature_discovery.name: ClassificationFeatureDiscoveryConfigSchema,
+        StageType.classification_modelling: ClassificationModellingSchema,
     }
 
     config_lookup: Dict[Type[Any], str] = {
