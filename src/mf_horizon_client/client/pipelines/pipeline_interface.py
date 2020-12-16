@@ -589,7 +589,7 @@ class PipelineInterface:
         }
 
         files = dict(file=str_buffer, follow_redirects=True)
-        body = dict(options=json.dumps(options), horizon=json.dumps(horizon), regressor=json.dumps(regressor_type.value))
+        body = dict(options=json.dumps(options), horizon=horizon, regressor=regressor_type.name)
 
         response = self.client.post(
             Endpoints.PREDICT_FOR_SINGLE_PIPELINE_AND_HORIZON(pipeline_id),
