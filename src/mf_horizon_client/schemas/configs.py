@@ -65,6 +65,7 @@ class ProblemSpecConfigSchema(CamelCaseSchema):
     target_features = fields.List(fields.String(required=False))
     horizons = fields.List(fields.Integer(required=True))
     data_split = fields.Float(required=True)
+    used_in_lstm = fields.Boolean(required=True)
     active_columns = fields.List(fields.Integer(required=False))
     scale_factor_multiplier = fields.Float(required=True)
 
