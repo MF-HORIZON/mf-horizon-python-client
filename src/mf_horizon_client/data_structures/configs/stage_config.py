@@ -222,6 +222,7 @@ class ProblemSpecificationConfig(StageConfig):
     def __init__(
         self,
         target_features: List[FeatureId],
+        used_in_lstm: bool,
         horizons: List[int],
         data_split: float,
         active_columns: List[int],
@@ -229,6 +230,7 @@ class ProblemSpecificationConfig(StageConfig):
     ):
         self.target_features = target_features
         self.horizons = horizons
+        self.used_in_lstm = used_in_lstm
         self.data_split = data_split
         self.active_columns = active_columns
         self.scale_factor_multiplier = scale_factor_multiplier
@@ -238,6 +240,7 @@ class ProblemSpecificationConfig(StageConfig):
             {
                 "target_features": self.target_features,
                 "horizons": self.horizons,
+                "used_in_lstm": self.used_in_lstm,
                 "data_split": self.data_split,
                 "active_columns": self.active_columns,
                 "type": StageType.problem_specification.value,
@@ -252,6 +255,7 @@ class ProblemSpecificationConfig(StageConfig):
             horizons=[1, 2, 3, 4, 5],
             data_split=0.75,
             active_columns=[],
+            used_in_lstm=False
         )
 
     @classmethod
@@ -375,7 +379,6 @@ class BacktestStageConfig(StageConfig):
         if self.fold_train_frac > 0.9:
             return False
         return True
-
 
 class PredictionStageConfig(StageConfig):
     def __init__(self, regressor: RegressorType):
