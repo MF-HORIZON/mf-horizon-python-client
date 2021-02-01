@@ -1,6 +1,6 @@
 import abc
 import json
-from typing import List
+from typing import List, Optional
 
 from mf_horizon_client.data_structures.configs.stage_config_enums import (
     CorrelationMethod,
@@ -222,7 +222,7 @@ class ProblemSpecificationConfig(StageConfig):
     def __init__(
         self,
         target_features: List[FeatureId],
-        used_in_lstm: bool,
+        used_in_lstm: Optional[bool],
         horizons: List[int],
         data_split: float,
         active_columns: List[int],
