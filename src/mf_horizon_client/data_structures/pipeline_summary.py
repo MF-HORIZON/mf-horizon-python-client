@@ -14,3 +14,4 @@ class PipelineSummary:
     creation_user: int
     dataset_name: str
     locked: bool
+    auto_update: bool

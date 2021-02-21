@@ -23,3 +23,5 @@ class IngestionProcess:
     error: Optional[str]
     task_id: Optional[str]
     dataset_id: Optional[int]
+    last_update_error: Optional[str]
+    last_update_date: Optional[datetime.datetime]

@@ -23,6 +23,8 @@ class DatasetSummary:
     cadence: Optional[int]
     description: str = "Description unspecified"
     columns: Union[List[RawColumn], None] = None
+    last_update_date: Optional[datetime.datetime] = None
+    last_update_error: Optional[str] = None
 
     @property
     def column_ids(self) -> List[int]:
