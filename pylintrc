@@ -152,6 +152,7 @@ disable=print-statement,
         no-else-return,
         raise-missing-from,
         too-many-instance-attributes,
+        invalid-name,
 
 
 # Enable the message, report, category or checker with the given id(s). You can

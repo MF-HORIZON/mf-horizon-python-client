@@ -20,5 +20,6 @@ def catch_errors(f):
             print_failure(f"{str.upper(f.__name__)} request failed to successfully execute. {exception.status_code if exception else None}")
             if exception and exception.message:
                 print_server_error_details(exception.message)
+            raise
 
     return func
