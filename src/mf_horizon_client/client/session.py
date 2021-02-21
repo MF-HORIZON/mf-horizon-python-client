@@ -50,6 +50,7 @@ class HorizonSession:
             backoff_factor=0.5,
             method_whitelist=False,
             status_forcelist=RETRY_STATUS_CODES,
+            raise_on_status=False,
         )
 
         adapter = HTTPAdapter(max_retries=retry)

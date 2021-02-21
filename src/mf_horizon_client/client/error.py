@@ -7,7 +7,8 @@ class HorizonError(RuntimeError):
     def __init__(self, response: Response) -> None:
         self.status_code = response.status_code
         try:
-            self.message = response.json()["message"]
+            response_json = response.json()
+            self.message = response_json["summary"] or response_json["message"]
         except BaseException:
             self.message = response.content.decode() if response.content else ""
         super().__init__(f"Status: {self.status_code}  Message: {self.message}")
