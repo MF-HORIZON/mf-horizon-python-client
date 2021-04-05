@@ -8,7 +8,6 @@ install_requires = [
     "pandas",
     "urllib3",
     "requests",
-    "dataclasses",
     "marshmallow",
     "marshmallow-enum",
     "tqdm",
@@ -52,7 +51,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     description="Lightweight Python wrapper for Mind Foundry Horizon API",
     long_description=long_description,
-    download_url='https://github.com/MF-HORIZON/mf-horizon-python-client/archive/v2.11.0.tar.gz',
+    download_url='https://github.com/MF-HORIZON/mf-horizon-python-client/archive/v2.11.1.tar.gz',
     # The project"s main homepage.
     url="https://www.mindfoundry.ai/horizon",
     # Author details
