@@ -1,5 +1,4 @@
 import os
-import sys
 import versioneer
 from setuptools import find_namespace_packages, setup
 
@@ -13,10 +12,8 @@ install_requires = [
     "tqdm",
     "scikit-learn",
     "marshmallow-oneofschema",
+    "dataclasses; python_version<'3.7'",
 ]
-
-if sys.version_info.micro < 7:
-    install_requires.append("dataclasses")
 
 dev_extras = [
     "black",
